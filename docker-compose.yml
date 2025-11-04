@@ -1,12 +1,16 @@
 services:
   user-service:
-    build: ./user-service
+    build:
+      context: .
+      dockerfile: ./cmd/user-service/Dockerfile
     container_name: user-service
     ports:
       - "8080:8080"
 
   gateway:
-    build: ./gateway
+    build:
+      context: .
+      dockerfile: ./cmd/gateway/Dockerfile
     container_name: api-gateway
     ports:
       - "8000:8000"
