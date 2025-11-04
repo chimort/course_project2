@@ -1,30 +1,31 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
+
+	"github.com/labstack/echo/v4"
 )
 
 func main() {
-	userURL, _ := url.Parse("http://user-service:8080")
-	matchingURL, _ := url.Parse("http://matching-service:8081")
-	chatURL, _ := url.Parse("http://chat-service:8082")
 
-	http.HandleFunc("/user/", func(w http.ResponseWriter, r *http.Request) {
-		r.URL.Path = r.URL.Path[len("/user"):]
-		httputil.NewSingleHostReverseProxy(userURL).ServeHTTP(w, r)
-	})
-	http.HandleFunc("/matching/", func(w http.ResponseWriter, r *http.Request) {
-		httputil.NewSingleHostReverseProxy(matchingURL).ServeHTTP(w, r)
-	})
-	http.HandleFunc("/chat/", func(w http.ResponseWriter, r *http.Request) {
-		httputil.NewSingleHostReverseProxy(chatURL).ServeHTTP(w, r)
-	})
+	e := echo.New()
 
-	port := ":8000"
-	fmt.Println("API Gateway running on", port)
-	log.Fatal(http.ListenAndServe(port, nil))
+	proxyTo := func(target string, prefixToStrip string) echo.HandlerFunc {
+		url, _ := url.Parse(target)
+		proxy := httputil.NewSingleHostReverseProxy(url)
+		return func(c echo.Context) error {
+			c.Request().URL.Path = strings.TrimPrefix(c.Request().URL.Path, prefixToStrip)
+			c.Request().Host = url.Host
+			proxy.ServeHTTP(c.Response(), c.Request())
+			return nil
+		}
+	}
+
+	e.Any("/user/*", proxyTo("http://user-service:8080", "/user"))
+	e.Any("/matching/*", proxyTo("http://matching-service:8081", "/matching"))
+	e.Any("/chat/*", proxyTo("http://chat-service:8082", "/chat"))
+
+	e.Logger.Fatal(e.Start(":8000"))
 }
