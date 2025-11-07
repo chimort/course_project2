@@ -2,7 +2,7 @@ package repository
 
 import (
 	"database/sql"
-	"mathcing/iternal/user/models"
+	"github.com/chimort/course_project2/iternal/user/models"
 )
 
 type AccountRepository struct {

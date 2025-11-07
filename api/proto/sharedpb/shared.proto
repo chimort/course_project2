@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package sharedpb;
+option go_package = "github.com/chimort/course_project2/api/proto/sharedpb;sharedpb";
+
+message Interests {
+    string name = 1;
+}
+
+message Language {
+    string name = 1;
+}
+
+message User {
+    string id = 1;
+    string username = 2;
+    string password = 3;
+    repeated Language language = 4;
+    repeated Interests interests = 5;
+}

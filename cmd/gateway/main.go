@@ -1,31 +1,26 @@
 package main
 
 import (
-	"net/http/httputil"
-	"net/url"
-	"strings"
+    "context"
+    "fmt"
+    "log"
+    "net/http"
 
-	"github.com/labstack/echo/v4"
+    "github.com/chimort/course_project2/api/proto/authpb"
+    "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+    "google.golang.org/grpc"
 )
 
 func main() {
+    ctx := context.Background()
+    mux := runtime.NewServeMux()
 
-	e := echo.New()
+    opts := []grpc.DialOption{grpc.WithInsecure()}
+    err := authpb.RegisterRegisterServiceHandlerFromEndpoint(ctx, mux, "auth-service:50052", opts)
+    if err != nil {
+        log.Fatalf("failed to register gateway: %v", err)
+    }
 
-	proxyTo := func(target string, prefixToStrip string) echo.HandlerFunc {
-		url, _ := url.Parse(target)
-		proxy := httputil.NewSingleHostReverseProxy(url)
-		return func(c echo.Context) error {
-			c.Request().URL.Path = strings.TrimPrefix(c.Request().URL.Path, prefixToStrip)
-			c.Request().Host = url.Host
-			proxy.ServeHTTP(c.Response(), c.Request())
-			return nil
-		}
-	}
-
-	e.Any("/user/*", proxyTo("http://user-service:8080", "/user"))
-	e.Any("/matching/*", proxyTo("http://matching-service:8081", "/matching"))
-	e.Any("/chat/*", proxyTo("http://chat-service:8082", "/chat"))
-
-	e.Logger.Fatal(e.Start(":8000"))
+    fmt.Println("🌐 API Gateway running on :8080")
+    http.ListenAndServe(":8080", mux)
 }

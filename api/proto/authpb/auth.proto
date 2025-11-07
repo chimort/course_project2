@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package authpb;
+option go_package = "github.com/chimort/course_project2/api/proto/authpb;authpb";
+
+import "sharedpb/shared.proto";
+import "google/api/annotations.proto";
+import "google/api/http.proto";
+
+
+service RegisterService {
+  rpc Register (RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/v1/register"
+      body: "*"
+    };
+  };
+  rpc Login (LoginRequest) returns (LoginResponse);
+}
+
+message RegisterRequest {
+  sharedpb.User user = 1;
+}
+
+message RegisterResponse {
+  string status = 1;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}
