@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/chimort/course_project2/api/proto/authpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
@@ -11,32 +11,35 @@ import (
 
 type AuthService struct {
 	userClient userpb.UserServiceClient
+	log        *slog.Logger
 }
 
-func (s *AuthService) NewAuthServer(service *AuthService) any {
-	panic("unimplemented")
+func NewAuthService(userClient userpb.UserServiceClient, log *slog.Logger) *AuthService {
+	return &AuthService{
+		userClient: userClient,
+		log:        log.With("service", "auth"),
+	}
 }
 
-func NewAuthService(userClient userpb.UserServiceClient) *AuthService {
-	return &AuthService{userClient: userClient}
-}
+func (s *AuthService) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
+	s.log.Info("register request received", "username", req.User.Username)
 
-// Регистрация пользователя
-func (s *AuthService) RegisterUser(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
 	user := req.GetUser()
 	_, err := s.userClient.CreateUser(ctx, &userpb.CreateUserRequest{User: user})
 	if err != nil {
+		s.log.Error("failed to create user in user-service", "error", err)
 		return &authpb.RegisterResponse{Status: "failed to register user"}, err
 	}
-	log.Printf("✅ User registered via user-service: %s", user.Username)
+	s.log.Info("user successfully registered", "username", req.User.Username)
 	return &authpb.RegisterResponse{Status: "registration successful"}, nil
 }
 
-// Логин пользователя
-func (s *AuthService) LoginUser(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
-	// Мок, пока нет реальной базы
+func (s *AuthService) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
+	s.log.Info("login attempt", "username", req.Username)
 	if req.Username == "admin" && req.Password == "123" {
+		s.log.Info("login successful", "username", req.Username)
 		return &authpb.LoginResponse{Token: "fake-jwt-token-for-admin"}, nil
 	}
+	s.log.Warn("login failed", "username", req.Username)
 	return nil, fmt.Errorf("invalid credentials")
 }

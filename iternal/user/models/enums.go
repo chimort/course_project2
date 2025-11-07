@@ -3,10 +3,10 @@ package models
 type Interests string
 
 const (
-	InterestMusic Interests = "music"
+	InterestMusic  Interests = "music"
 	InterestMovies Interests = "movies"
-	InterestSport Interests = "sport"
-	InterestBooks Interests = "books"
+	InterestSport  Interests = "sport"
+	InterestBooks  Interests = "books"
 )
 
 type Language string

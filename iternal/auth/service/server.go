@@ -1,27 +1,24 @@
 package service
 
 import (
-    "context"
+	"context"
 
-    "github.com/chimort/course_project2/api/proto/authpb"
+	"github.com/chimort/course_project2/api/proto/authpb"
 )
 
 type AuthServer struct {
-    authpb.UnimplementedRegisterServiceServer
-    service *AuthService // ссылка на бизнес-логику
+	authpb.UnimplementedRegisterServiceServer
+	service *AuthService 
 }
 
-// Register gRPC метод
 func (s *AuthServer) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
-    return s.service.RegisterUser(ctx, req)
+	return s.service.Register(ctx, req)
 }
 
-// Login gRPC метод
 func (s *AuthServer) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
-    return s.service.LoginUser(ctx, req)
+	return s.service.Login(ctx, req)
 }
 
-// Конструктор
 func NewAuthServer(service *AuthService) *AuthServer {
-    return &AuthServer{service: service}
+	return &AuthServer{service: service}
 }
