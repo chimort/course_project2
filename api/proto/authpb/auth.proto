@@ -15,7 +15,12 @@ service RegisterService {
       body: "*"
     };
   };
-  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc Login (LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/login"
+      body: "*"
+    };
+  };
 }
 
 message RegisterRequest {

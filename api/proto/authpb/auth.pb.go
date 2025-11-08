@@ -220,10 +220,10 @@ const file_authpb_auth_proto_rawDesc = "" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"%\n" +
 	"\rLoginResponse\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token2\x9f\x01\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token2\xb5\x01\n" +
 	"\x0fRegisterService\x12V\n" +
-	"\bRegister\x12\x17.authpb.RegisterRequest\x1a\x18.authpb.RegisterResponse\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/v1/register\x124\n" +
-	"\x05Login\x12\x14.authpb.LoginRequest\x1a\x15.authpb.LoginResponseB<Z:github.com/chimort/course_project2/api/proto/authpb;authpbb\x06proto3"
+	"\bRegister\x12\x17.authpb.RegisterRequest\x1a\x18.authpb.RegisterResponse\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/v1/register\x12J\n" +
+	"\x05Login\x12\x14.authpb.LoginRequest\x1a\x15.authpb.LoginResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/loginB<Z:github.com/chimort/course_project2/api/proto/authpb;authpbb\x06proto3"
 
 var (
 	file_authpb_auth_proto_rawDescOnce sync.Once

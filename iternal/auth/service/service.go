@@ -7,6 +7,7 @@ import (
 
 	"github.com/chimort/course_project2/api/proto/authpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
@@ -36,10 +37,18 @@ func (s *AuthService) Register(ctx context.Context, req *authpb.RegisterRequest)
 
 func (s *AuthService) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
 	s.log.Info("login attempt", "username", req.Username)
-	if req.Username == "admin" && req.Password == "123" {
-		s.log.Info("login successful", "username", req.Username)
-		return &authpb.LoginResponse{Token: "fake-jwt-token-for-admin"}, nil
+
+	resp, err := s.userClient.GetUser(ctx, &userpb.GetUserRequest{Username: req.Username})
+	if err != nil {
+		s.log.Warn("login failed: user not found", "username", req.Username, "error", err)
+		return nil, fmt.Errorf("invalid credentials")
 	}
-	s.log.Warn("login failed", "username", req.Username)
-	return nil, fmt.Errorf("invalid credentials")
+	user := resp.User
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if err != nil {
+		s.log.Warn("invalid password", "username", req.Username)
+		return nil, fmt.Errorf("invalid credentials")
+	}
+	s.log.Info("login successful", "username", req.Username)
+	return &authpb.LoginResponse{Token: "fake-jwt-token-for-" + req.Username}, nil
 }

@@ -6,6 +6,7 @@ import "sharedpb/shared.proto";
 
 service UserService {
     rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+    rpc GetUser (GetUserRequest) returns (GetUserResponse);
 }
 
 message CreateUserRequest {
@@ -14,4 +15,12 @@ message CreateUserRequest {
 
 message CreateUserResponse {
     string response = 1;
+}
+
+message GetUserRequest {
+    string username = 1;
+}
+
+message GetUserResponse {
+    sharedpb.User user = 1;
 }
