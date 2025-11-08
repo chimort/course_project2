@@ -7,6 +7,8 @@ import (
 
 	"github.com/chimort/course_project2/api/proto/authpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
+	"github.com/chimort/course_project2/iternal/auth/token"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,6 +28,7 @@ func (s *AuthService) Register(ctx context.Context, req *authpb.RegisterRequest)
 	s.log.Info("register request received", "username", req.User.Username)
 
 	user := req.GetUser()
+	user.Id = uuid.New().String()
 	_, err := s.userClient.CreateUser(ctx, &userpb.CreateUserRequest{User: user})
 	if err != nil {
 		s.log.Error("failed to create user in user-service", "error", err)
@@ -49,6 +52,39 @@ func (s *AuthService) Login(ctx context.Context, req *authpb.LoginRequest) (*aut
 		s.log.Warn("invalid password", "username", req.Username)
 		return nil, fmt.Errorf("invalid credentials")
 	}
+	accessToken, err := token.GenerateJwt(user.Id, user.Username)
+	if err != nil {
+		s.log.Error("failed to generate jwt", "error", err)
+		return nil, fmt.Errorf("could not generate token")
+	}
+	refreshToken, err := token.GenerateRefreshToken(user.Id)
+	if err != nil {
+		s.log.Error("failed to generate jwt", "error", err)
+		return nil, fmt.Errorf("could not generate token")
+	}
 	s.log.Info("login successful", "username", req.Username)
-	return &authpb.LoginResponse{Token: "fake-jwt-token-for-" + req.Username}, nil
+	return &authpb.LoginResponse{
+		AccessToken: accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (s *AuthService) RefreshToken(ctx context.Context, req *authpb.RefreshTokenRequest) (*authpb.RefreshTokenResponse, error) {
+	claims, err := token.ValidateRefreshToken(req.RefreshToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid refresh token")
+	}
+
+	user, err := s.userClient.GetUser(ctx, &userpb.GetUserRequest{Username: claims.Username})
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	newAccessToken, _ := token.GenerateJwt(user.User.Id, user.User.Username)
+	newRefreshToken, _ := token.GenerateRefreshToken(user.User.Id)
+
+	return &authpb.RefreshTokenResponse{
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
+	}, nil
 }

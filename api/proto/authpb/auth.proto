@@ -21,6 +21,12 @@ service RegisterService {
       body: "*"
     };
   };
+  rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/refresh-token"
+      body: "*"
+    };
+  };
 }
 
 message RegisterRequest {
@@ -37,5 +43,15 @@ message LoginRequest {
 }
 
 message LoginResponse {
-  string token = 1;
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
 }

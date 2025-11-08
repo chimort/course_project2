@@ -11,7 +11,7 @@ import (
 
 type UserService struct {
 	repo *repository.UserRepository
-	log   *slog.Logger
+	log  *slog.Logger
 }
 
 func NewUserService(repo *repository.UserRepository, log *slog.Logger) *UserService {
@@ -27,7 +27,7 @@ func (s *UserService) CreateUser(ctx context.Context, u *models.User) error {
 		return err
 	}
 	u.Password = string(hashedPassword)
-	
+
 	return s.repo.CreateUser(ctx, u)
 }
 

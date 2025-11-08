@@ -63,7 +63,7 @@ func main() {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file:///app/iternal/user/migrations", 
+		"file:///app/iternal/user/migrations",
 		"postgres",
 		driver,
 	)

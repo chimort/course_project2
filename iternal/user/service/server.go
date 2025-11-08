@@ -35,20 +35,20 @@ func (s *UserServer) CreateUser(ctx context.Context, req *userpb.CreateUserReque
 func (s *UserServer) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
 	username := req.Username
 
-    user, err := s.service.GetUser(ctx, username)
-    if err != nil {
-        return nil, err
-    }
+	user, err := s.service.GetUser(ctx, username)
+	if err != nil {
+		return nil, err
+	}
 
-    userPb := &sharedpb.User{
-        Id:       user.ID,
-        Username: user.Username,
-        Password: user.Password,
-        Language: toPbLanguages(user.Language),
-        Interests: toPbInterests(user.Interests),
-    }
+	userPb := &sharedpb.User{
+		Id:        user.ID,
+		Username:  user.Username,
+		Password:  user.Password,
+		Language:  toPbLanguages(user.Language),
+		Interests: toPbInterests(user.Interests),
+	}
 
-    return &userpb.GetUserResponse{User: userPb}, nil
+	return &userpb.GetUserResponse{User: userPb}, nil
 }
 
 func mapSlice[T any, U any](in []T, f func(T) U) []U {

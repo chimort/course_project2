@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RegisterService_Register_FullMethodName = "/authpb.RegisterService/Register"
-	RegisterService_Login_FullMethodName    = "/authpb.RegisterService/Login"
+	RegisterService_Register_FullMethodName     = "/authpb.RegisterService/Register"
+	RegisterService_Login_FullMethodName        = "/authpb.RegisterService/Login"
+	RegisterService_RefreshToken_FullMethodName = "/authpb.RegisterService/RefreshToken"
 )
 
 // RegisterServiceClient is the client API for RegisterService service.
@@ -29,6 +30,7 @@ const (
 type RegisterServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error)
 }
 
 type registerServiceClient struct {
@@ -59,12 +61,23 @@ func (c *registerServiceClient) Login(ctx context.Context, in *LoginRequest, opt
 	return out, nil
 }
 
+func (c *registerServiceClient) RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RefreshTokenResponse)
+	err := c.cc.Invoke(ctx, RegisterService_RefreshToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RegisterServiceServer is the server API for RegisterService service.
 // All implementations must embed UnimplementedRegisterServiceServer
 // for forward compatibility.
 type RegisterServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error)
 	mustEmbedUnimplementedRegisterServiceServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedRegisterServiceServer) Register(context.Context, *RegisterReq
 }
 func (UnimplementedRegisterServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedRegisterServiceServer) RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefreshToken not implemented")
 }
 func (UnimplementedRegisterServiceServer) mustEmbedUnimplementedRegisterServiceServer() {}
 func (UnimplementedRegisterServiceServer) testEmbeddedByValue()                         {}
@@ -138,6 +154,24 @@ func _RegisterService_Login_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RegisterService_RefreshToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RegisterServiceServer).RefreshToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RegisterService_RefreshToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RegisterServiceServer).RefreshToken(ctx, req.(*RefreshTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RegisterService_ServiceDesc is the grpc.ServiceDesc for RegisterService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var RegisterService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _RegisterService_Login_Handler,
+		},
+		{
+			MethodName: "RefreshToken",
+			Handler:    _RegisterService_RefreshToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -8,7 +8,7 @@ import (
 
 type AuthServer struct {
 	authpb.UnimplementedRegisterServiceServer
-	service *AuthService 
+	service *AuthService
 }
 
 func (s *AuthServer) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
