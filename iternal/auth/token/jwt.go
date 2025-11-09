@@ -4,11 +4,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/chimort/course_project2/iternal/auth/utils"
 	"github.com/golang-jwt/jwt/v5"
 )
-
-var jwtKey = []byte("secretkey")
-var refreshKey = []byte("secretrefreshkey")
 
 var (
 	ErrExpired     = errors.New("access token expired")
@@ -21,9 +19,8 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateJwt(username string) (string, error) {
-	expTime := time.Now().Add(12 * time.Hour)
-
+func generateToken(username string, secret []byte, duration time.Duration) (string, error) {
+	expTime := time.Now().Add(duration)
 	claims := &Claims{
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -32,24 +29,24 @@ func GenerateJwt(username string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
+	return token.SignedString(secret)
+}
+
+func GenerateJwt(username string) (string, error) {
+	return generateToken(username, utils.JWTKEY, 20*time.Minute)
 }
 
 func GenerateRefreshToken(username string) (string, error) {
-	expiration := time.Now().Add(7 * 24 * time.Hour)
-	claims := &Claims{
-		Username: username,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiration),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(refreshKey)
+	return generateToken(username, utils.REFRESHKEY, 7*24*time.Hour)
 }
 
-func ValidateAccessToken(tokenStr string) (*Claims, error) {
+func validateToken(tokenStr string, secret []byte) (*Claims, error) {
+	if tokenStr == "" {
+		return nil, ErrInvalid
+	}
+
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
+		return secret, nil
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
@@ -64,31 +61,9 @@ func ValidateAccessToken(tokenStr string) (*Claims, error) {
 }
 
 func ValidateRefreshToken(tokenStr string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return refreshKey, nil
-	})
-	if err != nil {
-		return nil, ErrInvalid
-	}
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		return claims, nil
-	}
-	return nil, ErrInvalid
+	return validateToken(tokenStr, utils.REFRESHKEY)
 }
 
-func ValidateTokens(accessToken, refreshToken string) (*Claims, error) {
-	claims, err := ValidateAccessToken(accessToken)
-	if err == nil {
-		return claims, nil
-	}
-
-	if errors.Is(err, ErrExpired) && refreshToken != "" {
-		refreshClaims, rErr := ValidateRefreshToken(refreshToken)
-		if rErr == nil {
-			return refreshClaims, ErrRefreshOnly
-		}
-		return nil, ErrInvalid
-	}
-
-	return nil, err
+func ValidateToken(tokenStr string) (*Claims, error) {
+	return validateToken(tokenStr, utils.JWTKEY)
 }

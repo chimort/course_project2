@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -23,19 +24,26 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		accessToken := parts[1]
 		refreshToken := c.Request().Header.Get("X-Refresh-Token")
 
-		claims, err := token.ValidateTokens(accessToken, refreshToken)
-		if err != nil {
-			switch err {
-			case token.ErrExpired:
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "access token expired"})
-			case token.ErrRefreshOnly:
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "access token expired, refresh valid"})
-			default:
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid token"})
-			}
+		claims, err := token.ValidateToken(accessToken)
+		if err == nil {
+			c.Set("username", claims.Username)
+			return next(c)
 		}
 
-		c.Set("username", claims.Username)
-		return next(c)
+		if errors.Is(err, token.ErrExpired) {
+			refreshClaims, rErr := token.ValidateToken(refreshToken)
+			if rErr == nil {
+				c.Set("username", refreshClaims.Username)
+				return next(c)
+			}
+
+			if errors.Is(rErr, token.ErrExpired) {
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "both tokens expired"})
+			}
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid refresh token"})
+		}
+
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid access token"})
 	}
 }
+

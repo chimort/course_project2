@@ -72,19 +72,26 @@ func (s *AuthService) Login(ctx context.Context, req *authpb.LoginRequest) (*aut
 func (s *AuthService) RefreshToken(ctx context.Context, req *authpb.RefreshTokenRequest) (*authpb.RefreshTokenResponse, error) {
 	claims, err := token.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
-		return nil, fmt.Errorf("invalid refresh token")
+		return nil, fmt.Errorf("invalid refresh token: %w", err)
 	}
 
-	user, err := s.userClient.GetUser(ctx, &userpb.GetUserRequest{Username: claims.Username})
+	userResp, err := s.userClient.GetUser(ctx, &userpb.GetUserRequest{Username: claims.Username})
 	if err != nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	newAccessToken, _ := token.GenerateJwt(user.User.Username)
-	newRefreshToken, _ := token.GenerateRefreshToken(user.User.Username)
+	newAccessToken, err := token.GenerateJwt(userResp.User.Username)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
+	}
+	newRefreshToken, err := token.GenerateRefreshToken(userResp.User.Username)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+	}
 
 	return &authpb.RefreshTokenResponse{
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,
 	}, nil
 }
+
