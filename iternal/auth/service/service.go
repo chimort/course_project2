@@ -52,12 +52,12 @@ func (s *AuthService) Login(ctx context.Context, req *authpb.LoginRequest) (*aut
 		s.log.Warn("invalid password", "username", req.Username)
 		return nil, fmt.Errorf("invalid credentials")
 	}
-	accessToken, err := token.GenerateJwt(user.Id, user.Username)
+	accessToken, err := token.GenerateJwt(user.Username)
 	if err != nil {
 		s.log.Error("failed to generate jwt", "error", err)
 		return nil, fmt.Errorf("could not generate token")
 	}
-	refreshToken, err := token.GenerateRefreshToken(user.Id)
+	refreshToken, err := token.GenerateRefreshToken(user.Username)
 	if err != nil {
 		s.log.Error("failed to generate jwt", "error", err)
 		return nil, fmt.Errorf("could not generate token")
@@ -80,8 +80,8 @@ func (s *AuthService) RefreshToken(ctx context.Context, req *authpb.RefreshToken
 		return nil, fmt.Errorf("user not found")
 	}
 
-	newAccessToken, _ := token.GenerateJwt(user.User.Id, user.User.Username)
-	newRefreshToken, _ := token.GenerateRefreshToken(user.User.Id)
+	newAccessToken, _ := token.GenerateJwt(user.User.Username)
+	newRefreshToken, _ := token.GenerateRefreshToken(user.User.Username)
 
 	return &authpb.RefreshTokenResponse{
 		AccessToken:  newAccessToken,

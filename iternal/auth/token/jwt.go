@@ -17,16 +17,14 @@ var (
 )
 
 type Claims struct {
-	UserId   string `json:"user_id"`
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJwt(userId, username string) (string, error) {
+func GenerateJwt(username string) (string, error) {
 	expTime := time.Now().Add(12 * time.Hour)
 
 	claims := &Claims{
-		UserId:   userId,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expTime),
@@ -37,10 +35,10 @@ func GenerateJwt(userId, username string) (string, error) {
 	return token.SignedString(jwtKey)
 }
 
-func GenerateRefreshToken(userID string) (string, error) {
+func GenerateRefreshToken(username string) (string, error) {
 	expiration := time.Now().Add(7 * 24 * time.Hour)
 	claims := &Claims{
-		UserId: userID,
+		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiration),
 		},

@@ -19,6 +19,10 @@ func (s *AuthServer) Login(ctx context.Context, req *authpb.LoginRequest) (*auth
 	return s.service.Login(ctx, req)
 }
 
+func (s *AuthServer) RefreshToken(ctx context.Context, req *authpb.RefreshTokenRequest) (*authpb.RefreshTokenResponse, error) {
+	return s.service.RefreshToken(ctx, req)
+}
+
 func NewAuthServer(service *AuthService) *AuthServer {
 	return &AuthServer{service: service}
 }

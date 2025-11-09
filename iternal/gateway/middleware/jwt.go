@@ -35,7 +35,6 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 
-		c.Set("user_id", claims.UserId)
 		c.Set("username", claims.Username)
 		return next(c)
 	}
