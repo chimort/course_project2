@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
@@ -40,7 +39,13 @@ func (h *UserHandler) GetProfile(c echo.Context) error {
 		h.log.Error("failed to get user", "username", username, "error", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get user"})
 	}
+
+	profile := UserProfileResponce{
+		Username: res.User.Username,
+		Language:  res.User.Language,
+		Interests: res.User.Interests,
+	}
+
 	h.log.Info("profile successfully fetched", "username", username)
-	c.Response().Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(c.Response()).Encode(res.User)
+	return c.JSON(http.StatusOK, profile)
 }
