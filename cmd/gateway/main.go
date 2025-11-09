@@ -39,6 +39,9 @@ func main() {
 	userHandler := handlers.NewUserHandler(userClient, log)
 	e.GET("/profile", userHandler.GetProfile, middleware.AuthMiddleware)
 
+	e.File("/", "web/index.html")
+	e.Static("/static", "web/static")
+
 	e.Any("/*", echo.WrapHandler(mux))
 	e.Start(":8080")
 }

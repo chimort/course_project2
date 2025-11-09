@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Simple Auth UI</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Auth demo</h1>
+    <div class="tabs">
+      <button id="btn-register">Register</button>
+      <button id="btn-login">Login</button>
+      <button id="btn-profile">Profile</button>
+    </div>
+
+    <div id="panel-register" class="panel">
+      <h2>Register</h2>
+      <label>Username <input id="reg-username" /></label>
+      <label>Password <input id="reg-password" type="password" /></label>
+
+      <div class="group">
+        <div>Languages:</div>
+        <label><input type="checkbox" name="lang" value="en" /> English</label>
+        <label><input type="checkbox" name="lang" value="ru" /> Russian</label>
+      </div>
+
+      <div class="group">
+        <div>Interests:</div>
+        <label><input type="checkbox" name="interest" value="music" /> Music</label>
+        <label><input type="checkbox" name="interest" value="movies" /> Movies</label>
+        <label><input type="checkbox" name="interest" value="sport" /> Sport</label>
+        <label><input type="checkbox" name="interest" value="books" /> Books</label>
+      </div>
+
+      <button id="do-register">Register</button>
+      <pre id="reg-result" class="result"></pre>
+    </div>
+
+    <div id="panel-login" class="panel" style="display:none">
+      <h2>Login</h2>
+      <label>Username <input id="login-username" /></label>
+      <label>Password <input id="login-password" type="password" /></label>
+      <button id="do-login">Login</button>
+      <pre id="login-result" class="result"></pre>
+    </div>
+
+    <div id="panel-profile" class="panel" style="display:none">
+      <h2>Profile</h2>
+      <div>
+        <button id="btn-get-profile">Get profile</button>
+        <button id="btn-refresh-token">Refresh access token</button>
+        <button id="btn-logout">Logout</button>
+      </div>
+      <pre id="profile-result" class="result"></pre>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
