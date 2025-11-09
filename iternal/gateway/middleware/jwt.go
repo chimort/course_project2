@@ -20,9 +20,19 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid token format"})
 		}
 
-		claims, err := token.ValidateAccessToken(parts[1])
+		accessToken := parts[1]
+		refreshToken := c.Request().Header.Get("X-Refresh-Token")
+
+		claims, err := token.ValidateTokens(accessToken, refreshToken)
 		if err != nil {
-			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "expired token"})
+			switch err {
+			case token.ErrExpired:
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "access token expired"})
+			case token.ErrRefreshOnly:
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "access token expired, refresh valid"})
+			default:
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+			}
 		}
 
 		c.Set("user_id", claims.UserId)

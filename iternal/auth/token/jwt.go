@@ -1,6 +1,7 @@
 package token
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -8,6 +9,12 @@ import (
 
 var jwtKey = []byte("secretkey")
 var refreshKey = []byte("secretrefreshkey")
+
+var (
+	ErrExpired     = errors.New("access token expired")
+	ErrInvalid     = errors.New("invalid token")
+	ErrRefreshOnly = errors.New("access token expired, refresh valid")
+)
 
 type Claims struct {
 	UserId   string `json:"user_id"`
@@ -47,12 +54,15 @@ func ValidateAccessToken(tokenStr string) (*Claims, error) {
 		return jwtKey, nil
 	})
 	if err != nil {
-		return nil, err
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, ErrExpired
+		}
+		return nil, ErrInvalid
 	}
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
-	return nil, err
+	return nil, ErrInvalid
 }
 
 func ValidateRefreshToken(tokenStr string) (*Claims, error) {
@@ -60,10 +70,27 @@ func ValidateRefreshToken(tokenStr string) (*Claims, error) {
 		return refreshKey, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, ErrInvalid
 	}
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
+	return nil, ErrInvalid
+}
+
+func ValidateTokens(accessToken, refreshToken string) (*Claims, error) {
+	claims, err := ValidateAccessToken(accessToken)
+	if err == nil {
+		return claims, nil
+	}
+
+	if errors.Is(err, ErrExpired) && refreshToken != "" {
+		refreshClaims, rErr := ValidateRefreshToken(refreshToken)
+		if rErr == nil {
+			return refreshClaims, ErrRefreshOnly
+		}
+		return nil, ErrInvalid
+	}
+
 	return nil, err
 }
