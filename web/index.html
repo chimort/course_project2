@@ -18,12 +18,40 @@
     <div id="panel-register" class="panel">
       <h2>Register</h2>
       <label>Username <input id="reg-username" /></label>
+      <label>Email <input id="reg-email" type="email" /></label>
       <label>Password <input id="reg-password" type="password" /></label>
+      <label>Age <input id="reg-age" type="number" min="0" /></label>
+      <label>Gender 
+        <select id="reg-gender">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </label>
 
-      <div class="group">
+      <div class="group"> 
         <div>Languages:</div>
-        <label><input type="checkbox" name="lang" value="en" /> English</label>
-        <label><input type="checkbox" name="lang" value="ru" /> Russian</label>
+        <div>
+          <label>
+            <input type="checkbox" name="lang" value="en" /> English
+            <select name="lang_level_en">
+              <option value="">-- Select level --</option>
+              <option value="1">Native</option>
+              <option value="2">Medium</option>
+              <option value="3">Low</option>
+            </select>
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" name="lang" value="ru" /> Russian
+             <select name="lang_level_ru">
+              <option value="">-- Select level --</option>
+              <option value="1">Native</option>
+              <option value="2">Medium</option>
+              <option value="3">Low</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       <div class="group">

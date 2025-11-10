@@ -1,8 +1,42 @@
-body { font-family: Arial, sans-serif; background:#f4f6f8; color:#222; }
-.container { max-width:720px; margin:30px auto; background:white; padding:20px; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.05); }
-.tabs { margin-bottom:12px; }
-.tabs button { margin-right:8px; padding:8px 12px; border-radius:6px; border:1px solid #ddd; background:#fff; cursor:pointer; }
-.panel { margin-top:12px; }
-label { display:block; margin:8px 0; }
-.group { margin:10px 0; }
-.result { background:#f8f9fb; padding:10px; border-radius:6px; white-space:pre-wrap; max-height:300px; overflow:auto; }
+body { 
+  font-family: Arial, sans-serif; 
+  background:#f4f6f8; 
+  color:#222; 
+}
+.container { 
+  max-width:720px; 
+  margin:30px auto; 
+  background:white; 
+  padding:20px; 
+  border-radius:8px; 
+  box-shadow:0 4px 20px rgba(0,0,0,0.05); 
+}
+.tabs { 
+  margin-bottom:12px; 
+}
+.tabs button { 
+  margin-right:8px; 
+  padding:8px 12px; 
+  border-radius:6px; 
+  border:1px solid #ddd; 
+  background:#fff; 
+  cursor:pointer; 
+}
+.panel { 
+  margin-top:12px; 
+}
+label { 
+  display:block; 
+  margin:8px 0; 
+}
+.group { 
+  margin:10px 0; 
+}
+.result { 
+  background:#f8f9fb; 
+  padding:10px; 
+  border-radius:6px; 
+  white-space:pre-wrap; 
+  max-height:300px; 
+  overflow:auto; 
+}

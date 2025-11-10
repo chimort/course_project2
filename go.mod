@@ -3,7 +3,6 @@ module github.com/chimort/course_project2
 go 1.25.3
 
 require (
-	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.4
 	google.golang.org/genproto/googleapis/api v0.0.0-20250929231259-57b25ae835d4
 	google.golang.org/grpc v1.76.0

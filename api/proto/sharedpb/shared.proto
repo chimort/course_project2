@@ -7,14 +7,24 @@ message Interests {
     string name = 1;
 }
 
+enum LanguageLevel {
+    UNKNOWN = 0;
+    NATIVE = 1;
+    MEDIUM = 2;
+    LOW = 3;
+}
+
 message Language {
     string name = 1;
+    LanguageLevel level = 2;
 }
 
 message User {
-    string id = 1;
-    string username = 2;
+    string username = 1;
+    string email = 2;
     string password = 3;
-    repeated Language language = 4;
+    repeated Language languages = 4;
     repeated Interests interests = 5;
+    int32 age = 6;
+    string gender = 7;
 }

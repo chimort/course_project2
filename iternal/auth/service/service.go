@@ -8,7 +8,6 @@ import (
 	"github.com/chimort/course_project2/api/proto/authpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
 	"github.com/chimort/course_project2/iternal/auth/token"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,9 +25,8 @@ func NewAuthService(userClient userpb.UserServiceClient, log *slog.Logger) *Auth
 
 func (s *AuthService) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
 	s.log.Info("register request received", "username", req.User.Username)
-
+	fmt.Printf("DEBUG1 CreateUser: langs=%+v, ints=%+v\n", req.User.Languages, req.User.Interests)
 	user := req.GetUser()
-	user.Id = uuid.New().String()
 	_, err := s.userClient.CreateUser(ctx, &userpb.CreateUserRequest{User: user})
 	if err != nil {
 		s.log.Error("failed to create user in user-service", "error", err)

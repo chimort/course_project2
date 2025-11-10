@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+
 	"github.com/chimort/course_project2/api/proto/userpb"
 	"github.com/labstack/echo/v4"
 )
@@ -40,9 +41,12 @@ func (h *UserHandler) GetProfile(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get user"})
 	}
 
-	profile := UserProfileResponce{
-		Username: res.User.Username,
-		Language:  res.User.Language,
+	profile := UserProfileResponse{
+		Username:  res.User.Username,
+        Email:     res.User.Email,
+        Age:       res.User.Age,
+        Gender:    res.User.Gender,
+        Languages: res.User.Languages,
 		Interests: res.User.Interests,
 	}
 

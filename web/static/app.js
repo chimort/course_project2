@@ -31,6 +31,36 @@ function getRefreshToken() {
 }
 
 // Build registration payload from checked inputs
+function collectCheckedLanguages() {
+  const els = document.querySelectorAll('input[name="lang"]:checked');
+  if (els.length === 0) {
+    alert("Please select at least one language.");
+    throw new Error("No language selected");
+  }
+
+  const langs = [];
+
+  for (const el of els) {
+    const levelSelect = document.querySelector(`select[name="lang_level_${el.value}"]`);
+    if (!levelSelect) {
+      alert(`No level select found for ${el.value}`);
+      throw new Error("Level select missing");
+    }
+
+    const levelValue = levelSelect.value;
+    if (levelValue === "") {
+      alert(`Please select a level for ${el.value.toUpperCase()}.`);
+      throw new Error("Language level not selected");
+    }
+
+    langs.push({ name: el.value, level: parseInt(levelValue) });
+  }
+
+  return langs;
+}
+
+
+
 function collectCheckedValues(name) {
   const els = document.querySelectorAll(`input[name="${name}"]:checked`);
   return Array.from(els).map(el => ({ name: el.value }));
@@ -38,28 +68,53 @@ function collectCheckedValues(name) {
 
 // Register
 document.getElementById('do-register').onclick = async () => {
-  const username = document.getElementById('reg-username').value;
-  const password = document.getElementById('reg-password').value;
-  const language = collectCheckedValues('lang');      // array of {name: "en"}
-  const interests = collectCheckedValues('interest'); // array of {name:"music"}
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value.trim();
+  const age = parseInt(document.getElementById('reg-age').value) || 0;
+  const gender = document.getElementById('reg-gender').value;
+
+  const languages = collectCheckedLanguages();
+  const interests = collectCheckedValues('interest');
+
+  // === Проверка обязательных полей ===
+  if (!username || !email || !password || !gender) {
+    alert("Please fill in all required fields (username, email, password, gender).");
+    return;
+  }
+
+  if (languages.length === 0) {
+    alert("Please select at least one language and its level.");
+    return;
+  }
+
+  if (interests.length === 0) {
+    alert("Please select at least one interest.");
+    return;
+  }
 
   const body = {
     user: {
       username,
+      email,
       password,
-      language,
+      age,
+      gender,
+      languages,
       interests
     }
   };
 
   const resBox = document.getElementById('reg-result');
   resBox.textContent = '...loading';
+
   try {
     const r = await fetch('/v1/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
+
     const data = await r.json();
     resBox.textContent = JSON.stringify({ status: r.status, body: data }, null, 2);
   } catch (e) {
@@ -82,8 +137,6 @@ document.getElementById('do-login').onclick = async () => {
     const data = await r.json();
     resBox.textContent = JSON.stringify({ status: r.status, body: data }, null, 2);
 
-    // Может твой backend возвращает ключи с другими именами (accessToken vs access_token).
-    // Поддержим оба варианта:
     const access = data.accessToken || data.access_token;
     const refresh = data.refreshToken || data.refresh_token;
     if (access) saveTokens(access, refresh);
@@ -108,11 +161,8 @@ document.getElementById('btn-get-profile').onclick = async () => {
       }
     });
 
-    // If server returned new access token in headers, pick it up
     const newAccess = r.headers.get('X-New-Access-Token');
-    if (newAccess) {
-      saveTokens(newAccess, refresh);
-    }
+    if (newAccess) saveTokens(newAccess, refresh);
 
     const body = await r.json();
     resBox.textContent = JSON.stringify({ status: r.status, body }, null, 2);

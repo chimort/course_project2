@@ -21,6 +21,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type LanguageLevel int32
+
+const (
+	LanguageLevel_UNKNOWN LanguageLevel = 0
+	LanguageLevel_NATIVE  LanguageLevel = 1
+	LanguageLevel_MEDIUM  LanguageLevel = 2
+	LanguageLevel_LOW     LanguageLevel = 3
+)
+
+// Enum value maps for LanguageLevel.
+var (
+	LanguageLevel_name = map[int32]string{
+		0: "UNKNOWN",
+		1: "NATIVE",
+		2: "MEDIUM",
+		3: "LOW",
+	}
+	LanguageLevel_value = map[string]int32{
+		"UNKNOWN": 0,
+		"NATIVE":  1,
+		"MEDIUM":  2,
+		"LOW":     3,
+	}
+)
+
+func (x LanguageLevel) Enum() *LanguageLevel {
+	p := new(LanguageLevel)
+	*p = x
+	return p
+}
+
+func (x LanguageLevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LanguageLevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_sharedpb_shared_proto_enumTypes[0].Descriptor()
+}
+
+func (LanguageLevel) Type() protoreflect.EnumType {
+	return &file_sharedpb_shared_proto_enumTypes[0]
+}
+
+func (x LanguageLevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LanguageLevel.Descriptor instead.
+func (LanguageLevel) EnumDescriptor() ([]byte, []int) {
+	return file_sharedpb_shared_proto_rawDescGZIP(), []int{0}
+}
+
 type Interests struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -68,6 +120,7 @@ func (x *Interests) GetName() string {
 type Language struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Level         LanguageLevel          `protobuf:"varint,2,opt,name=level,proto3,enum=sharedpb.LanguageLevel" json:"level,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -109,13 +162,22 @@ func (x *Language) GetName() string {
 	return ""
 }
 
+func (x *Language) GetLevel() LanguageLevel {
+	if x != nil {
+		return x.Level
+	}
+	return LanguageLevel_UNKNOWN
+}
+
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
-	Language      []*Language            `protobuf:"bytes,4,rep,name=language,proto3" json:"language,omitempty"`
+	Languages     []*Language            `protobuf:"bytes,4,rep,name=languages,proto3" json:"languages,omitempty"`
 	Interests     []*Interests           `protobuf:"bytes,5,rep,name=interests,proto3" json:"interests,omitempty"`
+	Age           int32                  `protobuf:"varint,6,opt,name=age,proto3" json:"age,omitempty"`
+	Gender        string                 `protobuf:"bytes,7,opt,name=gender,proto3" json:"gender,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -150,16 +212,16 @@ func (*User) Descriptor() ([]byte, []int) {
 	return file_sharedpb_shared_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *User) GetId() string {
+func (x *User) GetUsername() string {
 	if x != nil {
-		return x.Id
+		return x.Username
 	}
 	return ""
 }
 
-func (x *User) GetUsername() string {
+func (x *User) GetEmail() string {
 	if x != nil {
-		return x.Username
+		return x.Email
 	}
 	return ""
 }
@@ -171,9 +233,9 @@ func (x *User) GetPassword() string {
 	return ""
 }
 
-func (x *User) GetLanguage() []*Language {
+func (x *User) GetLanguages() []*Language {
 	if x != nil {
-		return x.Language
+		return x.Languages
 	}
 	return nil
 }
@@ -185,21 +247,45 @@ func (x *User) GetInterests() []*Interests {
 	return nil
 }
 
+func (x *User) GetAge() int32 {
+	if x != nil {
+		return x.Age
+	}
+	return 0
+}
+
+func (x *User) GetGender() string {
+	if x != nil {
+		return x.Gender
+	}
+	return ""
+}
+
 var File_sharedpb_shared_proto protoreflect.FileDescriptor
 
 const file_sharedpb_shared_proto_rawDesc = "" +
 	"\n" +
 	"\x15sharedpb/shared.proto\x12\bsharedpb\"\x1f\n" +
 	"\tInterests\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"\x1e\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"M\n" +
 	"\bLanguage\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"\xb1\x01\n" +
-	"\x04User\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
-	"\busername\x18\x02 \x01(\tR\busername\x12\x1a\n" +
-	"\bpassword\x18\x03 \x01(\tR\bpassword\x12.\n" +
-	"\blanguage\x18\x04 \x03(\v2\x12.sharedpb.LanguageR\blanguage\x121\n" +
-	"\tinterests\x18\x05 \x03(\v2\x13.sharedpb.InterestsR\tinterestsB@Z>github.com/chimort/course_project2/api/proto/sharedpb;sharedpbb\x06proto3"
+	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
+	"\x05level\x18\x02 \x01(\x0e2\x17.sharedpb.LanguageLevelR\x05level\"\xe3\x01\n" +
+	"\x04User\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
+	"\bpassword\x18\x03 \x01(\tR\bpassword\x120\n" +
+	"\tlanguages\x18\x04 \x03(\v2\x12.sharedpb.LanguageR\tlanguages\x121\n" +
+	"\tinterests\x18\x05 \x03(\v2\x13.sharedpb.InterestsR\tinterests\x12\x10\n" +
+	"\x03age\x18\x06 \x01(\x05R\x03age\x12\x16\n" +
+	"\x06gender\x18\a \x01(\tR\x06gender*=\n" +
+	"\rLanguageLevel\x12\v\n" +
+	"\aUNKNOWN\x10\x00\x12\n" +
+	"\n" +
+	"\x06NATIVE\x10\x01\x12\n" +
+	"\n" +
+	"\x06MEDIUM\x10\x02\x12\a\n" +
+	"\x03LOW\x10\x03B@Z>github.com/chimort/course_project2/api/proto/sharedpb;sharedpbb\x06proto3"
 
 var (
 	file_sharedpb_shared_proto_rawDescOnce sync.Once
@@ -213,20 +299,23 @@ func file_sharedpb_shared_proto_rawDescGZIP() []byte {
 	return file_sharedpb_shared_proto_rawDescData
 }
 
+var file_sharedpb_shared_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_sharedpb_shared_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_sharedpb_shared_proto_goTypes = []any{
-	(*Interests)(nil), // 0: sharedpb.Interests
-	(*Language)(nil),  // 1: sharedpb.Language
-	(*User)(nil),      // 2: sharedpb.User
+	(LanguageLevel)(0), // 0: sharedpb.LanguageLevel
+	(*Interests)(nil),  // 1: sharedpb.Interests
+	(*Language)(nil),   // 2: sharedpb.Language
+	(*User)(nil),       // 3: sharedpb.User
 }
 var file_sharedpb_shared_proto_depIdxs = []int32{
-	1, // 0: sharedpb.User.language:type_name -> sharedpb.Language
-	0, // 1: sharedpb.User.interests:type_name -> sharedpb.Interests
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0, // 0: sharedpb.Language.level:type_name -> sharedpb.LanguageLevel
+	2, // 1: sharedpb.User.languages:type_name -> sharedpb.Language
+	1, // 2: sharedpb.User.interests:type_name -> sharedpb.Interests
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_sharedpb_shared_proto_init() }
@@ -239,13 +328,14 @@ func file_sharedpb_shared_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sharedpb_shared_proto_rawDesc), len(file_sharedpb_shared_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_sharedpb_shared_proto_goTypes,
 		DependencyIndexes: file_sharedpb_shared_proto_depIdxs,
+		EnumInfos:         file_sharedpb_shared_proto_enumTypes,
 		MessageInfos:      file_sharedpb_shared_proto_msgTypes,
 	}.Build()
 	File_sharedpb_shared_proto = out.File

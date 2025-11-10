@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chimort/course_project2/api/proto/sharedpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
@@ -19,13 +20,16 @@ func NewUserServer(s *UserService) *UserServer {
 
 func (s *UserServer) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) (*userpb.CreateUserResponse, error) {
 	user := &models.User{
-		ID:        req.User.Id,
 		Username:  req.User.Username,
+		Email:     req.User.Email,
 		Password:  req.User.Password,
-		Language:  fromPbLanguages(req.User.Language),
+		Age:       int(req.User.Age),
+		Gender:    req.User.Gender,
+		Languages: fromPbLanguages(req.User.Languages),
 		Interests: fromPbInterests(req.User.Interests),
 	}
 
+	fmt.Printf("DEBUG CreateUser: langs=%+v, ints=%+v\n", req.User.Languages, user.Interests)
 	if err := s.service.CreateUser(ctx, user); err != nil {
 		return &userpb.CreateUserResponse{Response: "failed"}, err
 	}
@@ -41,11 +45,13 @@ func (s *UserServer) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*
 	}
 
 	userPb := &sharedpb.User{
-		Id:        user.ID,
 		Username:  user.Username,
+		Email:     user.Email,
 		Password:  user.Password,
-		Language:  toPbLanguages(user.Language),
+		Languages: toPbLanguages(user.Languages),
 		Interests: toPbInterests(user.Interests),
+		Age:       int32(user.Age),
+		Gender:    user.Gender,
 	}
 
 	return &userpb.GetUserResponse{User: userPb}, nil
@@ -59,25 +65,59 @@ func mapSlice[T any, U any](in []T, f func(T) U) []U {
 	return out
 }
 
-func toPbLanguages(langs []models.Language) []*sharedpb.Language {
-	return mapSlice(langs, func(l models.Language) *sharedpb.Language {
-		return &sharedpb.Language{Name: string(l)}
+func toPbLanguages(langs []models.UserLanguage) []*sharedpb.Language {
+	return mapSlice(langs, func(l models.UserLanguage) *sharedpb.Language {
+		return &sharedpb.Language{
+			Name:  string(l.Language),
+			Level: languageLevelToProto(l.Level),
+		}
 	})
 }
 
-func toPbInterests(ints []models.Interests) []*sharedpb.Interests {
-	return mapSlice(ints, func(i models.Interests) *sharedpb.Interests {
-		return &sharedpb.Interests{Name: string(i)}
-	})
-}
-func fromPbLanguages(langs []*sharedpb.Language) []models.Language {
-	return mapSlice(langs, func(l *sharedpb.Language) models.Language {
-		return models.Language(l.Name)
+func fromPbLanguages(langs []*sharedpb.Language) []models.UserLanguage {
+	return mapSlice(langs, func(l *sharedpb.Language) models.UserLanguage {
+		return models.UserLanguage{
+			Language: models.Language(l.Name),
+			Level:    languageLevelFromProto(l.Level),
+		}
 	})
 }
 
-func fromPbInterests(ints []*sharedpb.Interests) []models.Interests {
-	return mapSlice(ints, func(i *sharedpb.Interests) models.Interests {
-		return models.Interests(i.Name)
+func toPbInterests(ints []models.UserInterest) []*sharedpb.Interests {
+	return mapSlice(ints, func(i models.UserInterest) *sharedpb.Interests {
+		return &sharedpb.Interests{Name: string(i.Interest)}
 	})
+}
+
+func fromPbInterests(ints []*sharedpb.Interests) []models.UserInterest {
+	return mapSlice(ints, func(i *sharedpb.Interests) models.UserInterest {
+		return models.UserInterest{Interest: models.Interests(i.Name)}
+	})
+}
+
+
+func languageLevelToProto(level models.LanguageLevel) sharedpb.LanguageLevel {
+	switch level {
+	case "NATIVE":
+		return sharedpb.LanguageLevel_NATIVE
+	case "MEDIUM":
+		return sharedpb.LanguageLevel_MEDIUM
+	case "LOW":
+		return sharedpb.LanguageLevel_LOW
+	default:
+		return sharedpb.LanguageLevel_LOW
+	}
+}
+
+func languageLevelFromProto(level sharedpb.LanguageLevel) models.LanguageLevel {
+	switch level {
+	case sharedpb.LanguageLevel_NATIVE:
+		return "NATIVE"
+	case sharedpb.LanguageLevel_MEDIUM:
+		return "MEDIUM"
+	case sharedpb.LanguageLevel_LOW:
+		return "LOW"
+	default:
+		return "LOW"
+	}
 }

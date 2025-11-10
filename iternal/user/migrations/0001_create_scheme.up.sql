@@ -32,13 +32,13 @@ create table user_interests(
 create table chats (
     id serial PRIMARY KEY,
     chat_type varchar(50),
-    created_at TIMESTAMP WITH ZONE DEFAULT now()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 create table chat_participants (
     chat_id int REFERENCES chats(id) on delete cascade,
     username varchar(50) REFERENCES users(username) on delete cascade,
-    last_read_at TIMESTAMP WITH ZONE,
+    last_read_at TIMESTAMP WITH TIME ZONE,
     PRIMARY KEY(chat_id, username)
 );
 
