@@ -9,6 +9,7 @@ import (
 	"github.com/chimort/course_project2/api/proto/userpb"
 	"github.com/chimort/course_project2/iternal/auth/token"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/metadata"
 )
 
 type AuthService struct {
@@ -27,7 +28,8 @@ func (s *AuthService) Register(ctx context.Context, req *authpb.RegisterRequest)
 	s.log.Info("register request received", "username", req.User.Username)
 	fmt.Printf("DEBUG1 CreateUser: langs=%+v, ints=%+v\n", req.User.Languages, req.User.Interests)
 	user := req.GetUser()
-	_, err := s.userClient.CreateUser(ctx, &userpb.CreateUserRequest{User: user})
+	ctxInternal := metadata.AppendToOutgoingContext(context.Background(), "internal", "true")
+	_, err := s.userClient.CreateUser(ctxInternal, &userpb.CreateUserRequest{User: user})
 	if err != nil {
 		s.log.Error("failed to create user in user-service", "error", err)
 		return &authpb.RegisterResponse{Status: "failed to register user"}, err
@@ -39,6 +41,8 @@ func (s *AuthService) Register(ctx context.Context, req *authpb.RegisterRequest)
 func (s *AuthService) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
 	s.log.Info("login attempt", "username", req.Username)
 
+	md := metadata.Pairs("internal", "true")
+	ctx = metadata.NewOutgoingContext(ctx, md)
 	resp, err := s.userClient.GetUser(ctx, &userpb.GetUserRequest{Username: req.Username})
 	if err != nil {
 		s.log.Warn("login failed: user not found", "username", req.Username, "error", err)
@@ -72,7 +76,8 @@ func (s *AuthService) RefreshToken(ctx context.Context, req *authpb.RefreshToken
 	if err != nil {
 		return nil, fmt.Errorf("invalid refresh token: %w", err)
 	}
-
+	md := metadata.Pairs("internal", "true")
+	ctx = metadata.NewOutgoingContext(ctx, md)
 	userResp, err := s.userClient.GetUser(ctx, &userpb.GetUserRequest{Username: claims.Username})
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)

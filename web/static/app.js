@@ -157,12 +157,14 @@ document.getElementById('btn-get-profile').onclick = async () => {
   const refresh = getRefreshToken();
 
   try {
-    const r = await fetch('/profile', {
-      method: 'GET',
+    const r = await fetch('/v1/profile', {
+      method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + (access || ''),
-        'X-Refresh-Token': refresh || ''
-      }
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getAccessToken(),
+        'X-Refresh-Token': getRefreshToken()
+      },
+      body: JSON.stringify({})
     });
 
     const newAccess = r.headers.get('X-New-Access-Token');

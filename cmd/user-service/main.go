@@ -11,6 +11,7 @@ import (
 	"github.com/chimort/course_project2/api/proto/userpb"
 	"github.com/chimort/course_project2/iternal/pkg/logger"
 	"github.com/chimort/course_project2/iternal/user/repository"
+	"github.com/chimort/course_project2/iternal/middleware"	
 	"github.com/chimort/course_project2/iternal/user/service"
 	_ "github.com/lib/pq"
 
@@ -85,6 +86,7 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo, log)
+	userServer := service.NewUserServer(userService)
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
@@ -92,8 +94,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	grpcServer := grpc.NewServer()
-	userpb.RegisterUserServiceServer(grpcServer, service.NewUserServer(userService))
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(middleware.AuthUnaryInterceptor()),
+	)
+	userpb.RegisterUserServiceServer(grpcServer, userServer)
+
 
 	log.Info("UserService running", "addr", ":50051")
 	if err := grpcServer.Serve(lis); err != nil {

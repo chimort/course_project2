@@ -3,10 +3,18 @@ syntax = "proto3";
 package userpb;
 option go_package = "github.com/chimort/course_project2/api/proto/userpb;userpb";
 import "sharedpb/shared.proto";
+import "google/api/annotations.proto";
+import "google/api/http.proto";
 
 service UserService {
     rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
     rpc GetUser (GetUserRequest) returns (GetUserResponse);
+    rpc GetProfile (GetProfileRequest) returns (GetProfileResponse) {
+        option (google.api.http) = {
+            post: "/v1/profile"
+            body: "*"
+        };
+    };
 }
 
 message CreateUserRequest {
@@ -22,5 +30,12 @@ message GetUserRequest {
 }
 
 message GetUserResponse {
+    sharedpb.User user = 1;
+}
+
+message GetProfileRequest {}
+
+
+message GetProfileResponse {
     sharedpb.User user = 1;
 }

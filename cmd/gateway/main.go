@@ -7,8 +7,6 @@ import (
 
 	"github.com/chimort/course_project2/api/proto/authpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
-	"github.com/chimort/course_project2/iternal/gateway/handlers"
-	"github.com/chimort/course_project2/iternal/gateway/middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"google.golang.org/grpc"
@@ -17,31 +15,31 @@ import (
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
+	log.Info("Starting API Gateway...")
+
 	ctx := context.Background()
 	mux := runtime.NewServeMux()
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := authpb.RegisterRegisterServiceHandlerFromEndpoint(ctx, mux, "auth-service:50052", opts); err != nil {
 		log.Error("failed to register auth gateway", "error", err)
-	}
-
-	conn, err := grpc.NewClient("user-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Error("failed to new grpc client", "error", err)
 		return
 	}
-	defer conn.Close()
-	userClient := userpb.NewUserServiceClient(conn)
+
+	if err := userpb.RegisterUserServiceHandlerFromEndpoint(ctx, mux, "user-service:50051", opts); err != nil {
+		log.Error("failed to register user gateway", "error", err)
+		return
+	}
 
 	e := echo.New()
 	e.HideBanner = true
-
-	userHandler := handlers.NewUserHandler(userClient, log)
-	e.GET("/profile", userHandler.GetProfile, middleware.AuthMiddleware)
-
 	e.File("/", "web/index.html")
 	e.Static("/static", "web/static")
 
-	e.Any("/*", echo.WrapHandler(mux))
-	e.Start(":8080")
+	e.Any("/v1/*", echo.WrapHandler(mux))
+
+	log.Info("🌐 API Gateway running on :8080")
+	if err := e.Start(":8080"); err != nil {
+		log.Error("server stopped with error", "error", err)
+	}
 }

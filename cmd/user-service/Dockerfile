@@ -8,6 +8,9 @@ COPY ../../cmd/user-service ./cmd/user-service
 COPY ../../iternal/user ./iternal/user
 COPY ../../iternal/pkg ./iternal/pkg
 COPY ../../api/proto ./api/proto
+COPY ../../iternal/middleware ./iternal/middleware
+COPY ../../iternal/auth ./iternal/auth
+
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o user-service ./cmd/user-service/main.go
 
