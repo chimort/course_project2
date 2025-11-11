@@ -24,7 +24,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *userpb.CreateUserReque
 	user := &models.User{
 		Username:  req.User.Username,
 		FirstName: req.User.FirstName,
-		LastName: req.User.LastName,
+		LastName:  req.User.LastName,
 		Email:     req.User.Email,
 		Password:  req.User.Password,
 		Age:       int(req.User.Age),
@@ -34,6 +34,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *userpb.CreateUserReque
 	}
 
 	fmt.Printf("DEBUG CreateUser: langs=%+v, ints=%+v\n", req.User.Languages, user.Interests)
+
 	if err := s.service.CreateUser(ctx, user); err != nil {
 		return &userpb.CreateUserResponse{Response: "failed"}, err
 	}
@@ -41,50 +42,43 @@ func (s *UserServer) CreateUser(ctx context.Context, req *userpb.CreateUserReque
 }
 
 func (s *UserServer) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
-	username := req.Username
+	user, err := s.service.GetUser(ctx, req.Username)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userpb.GetUserResponse{User: buildUserPb(user, true)}, nil
+}
+
+func (s *UserServer) GetProfile(ctx context.Context, req *userpb.GetProfileRequest) (*userpb.GetProfileResponse, error) {
+	username, ok := ctx.Value(middleware.UsernameKey).(string)
+	if !ok || username == "" {
+		return nil, fmt.Errorf("unauthorized")
+	}
 
 	user, err := s.service.GetUser(ctx, username)
 	if err != nil {
 		return nil, err
 	}
 
-	userPb := &sharedpb.User{
-		Username:  user.Username,
-		FirstName: user.FirstName,
-		LastName: user.LastName,
-		Email:     user.Email,
-		Password:  user.Password,
-		Languages: converter.ToPbLanguages(user.Languages),
-		Interests: converter.ToPbInterests(user.Interests),
-		Age:       int32(user.Age),
-		Gender:    user.Gender,
-	}
-
-	return &userpb.GetUserResponse{User: userPb}, nil
+	return &userpb.GetProfileResponse{User: buildUserPb(user, false)}, nil
 }
 
-func (s *UserServer) GetProfile(ctx context.Context, req *userpb.GetProfileRequest) (*userpb.GetProfileResponse, error) {
-    username, ok := ctx.Value(middleware.UsernameKey).(string)
-    if !ok || username == "" {
-        return nil, fmt.Errorf("unauthorized")
-    }
+func buildUserPb(user *models.User, includePassword bool) *sharedpb.User {
+	pw := ""
+	if includePassword {
+		pw = user.Password
+	}
 
-    user, err := s.service.GetUser(ctx, username)
-    if err != nil {
-        return nil, err
-    }
-
-    return &userpb.GetProfileResponse{
-        User: &sharedpb.User{
-            Username:  user.Username,
-            FirstName: user.FirstName,
-            LastName:  user.LastName,
-            Email:     user.Email,
-			Password:   "",
-            Age:       int32(user.Age),
-            Gender:    user.Gender,
-            Languages: converter.ToPbLanguages(user.Languages),
-            Interests: converter.ToPbInterests(user.Interests),
-        },
-    }, nil
+	return &sharedpb.User{
+		Username:  user.Username,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		Password:  pw,
+		Age:       int32(user.Age),
+		Gender:    user.Gender,
+		Languages: converter.ToPbLanguages(user.Languages),
+		Interests: converter.ToPbInterests(user.Interests),
+	}
 }
