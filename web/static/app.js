@@ -69,6 +69,8 @@ function collectCheckedValues(name) {
 // Register
 document.getElementById('do-register').onclick = async () => {
   const username = document.getElementById('reg-username').value.trim();
+  const first_name = document.getElementById('reg-first-name').value.trim();
+  const last_name = document.getElementById('reg-last-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value.trim();
   const age = parseInt(document.getElementById('reg-age').value) || 0;
@@ -78,8 +80,8 @@ document.getElementById('do-register').onclick = async () => {
   const interests = collectCheckedValues('interest');
 
   // === Проверка обязательных полей ===
-  if (!username || !email || !password || !gender) {
-    alert("Please fill in all required fields (username, email, password, gender).");
+  if (!username || !first_name || !last_name || !email || !password || !gender) {
+    alert("Please fill in all required fields (username, first_name, last_name, email, password, gender).");
     return;
   }
 
@@ -96,6 +98,8 @@ document.getElementById('do-register').onclick = async () => {
   const body = {
     user: {
       username,
+      first_name,
+      last_name,
       email,
       password,
       age,

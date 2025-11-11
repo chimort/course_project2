@@ -21,6 +21,8 @@ func NewUserServer(s *UserService) *UserServer {
 func (s *UserServer) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) (*userpb.CreateUserResponse, error) {
 	user := &models.User{
 		Username:  req.User.Username,
+		FirstName: req.User.FirstName,
+		LastName: req.User.LastName,
 		Email:     req.User.Email,
 		Password:  req.User.Password,
 		Age:       int(req.User.Age),
@@ -46,6 +48,8 @@ func (s *UserServer) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*
 
 	userPb := &sharedpb.User{
 		Username:  user.Username,
+		FirstName: user.FirstName,
+		LastName: user.LastName,
 		Email:     user.Email,
 		Password:  user.Password,
 		Languages: toPbLanguages(user.Languages),

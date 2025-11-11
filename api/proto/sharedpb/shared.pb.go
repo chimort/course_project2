@@ -172,12 +172,14 @@ func (x *Language) GetLevel() LanguageLevel {
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
-	Languages     []*Language            `protobuf:"bytes,4,rep,name=languages,proto3" json:"languages,omitempty"`
-	Interests     []*Interests           `protobuf:"bytes,5,rep,name=interests,proto3" json:"interests,omitempty"`
-	Age           int32                  `protobuf:"varint,6,opt,name=age,proto3" json:"age,omitempty"`
-	Gender        string                 `protobuf:"bytes,7,opt,name=gender,proto3" json:"gender,omitempty"`
+	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName      string                 `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	Email         string                 `protobuf:"bytes,4,opt,name=email,proto3" json:"email,omitempty"`
+	Password      string                 `protobuf:"bytes,5,opt,name=password,proto3" json:"password,omitempty"`
+	Languages     []*Language            `protobuf:"bytes,6,rep,name=languages,proto3" json:"languages,omitempty"`
+	Interests     []*Interests           `protobuf:"bytes,7,rep,name=interests,proto3" json:"interests,omitempty"`
+	Age           int32                  `protobuf:"varint,8,opt,name=age,proto3" json:"age,omitempty"`
+	Gender        string                 `protobuf:"bytes,9,opt,name=gender,proto3" json:"gender,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -215,6 +217,20 @@ func (*User) Descriptor() ([]byte, []int) {
 func (x *User) GetUsername() string {
 	if x != nil {
 		return x.Username
+	}
+	return ""
+}
+
+func (x *User) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *User) GetLastName() string {
+	if x != nil {
+		return x.LastName
 	}
 	return ""
 }
@@ -270,15 +286,18 @@ const file_sharedpb_shared_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"M\n" +
 	"\bLanguage\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
-	"\x05level\x18\x02 \x01(\x0e2\x17.sharedpb.LanguageLevelR\x05level\"\xe3\x01\n" +
+	"\x05level\x18\x02 \x01(\x0e2\x17.sharedpb.LanguageLevelR\x05level\"\x9f\x02\n" +
 	"\x04User\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x03 \x01(\tR\bpassword\x120\n" +
-	"\tlanguages\x18\x04 \x03(\v2\x12.sharedpb.LanguageR\tlanguages\x121\n" +
-	"\tinterests\x18\x05 \x03(\v2\x13.sharedpb.InterestsR\tinterests\x12\x10\n" +
-	"\x03age\x18\x06 \x01(\x05R\x03age\x12\x16\n" +
-	"\x06gender\x18\a \x01(\tR\x06gender*=\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1b\n" +
+	"\tlast_name\x18\x03 \x01(\tR\blastName\x12\x14\n" +
+	"\x05email\x18\x04 \x01(\tR\x05email\x12\x1a\n" +
+	"\bpassword\x18\x05 \x01(\tR\bpassword\x120\n" +
+	"\tlanguages\x18\x06 \x03(\v2\x12.sharedpb.LanguageR\tlanguages\x121\n" +
+	"\tinterests\x18\a \x03(\v2\x13.sharedpb.InterestsR\tinterests\x12\x10\n" +
+	"\x03age\x18\b \x01(\x05R\x03age\x12\x16\n" +
+	"\x06gender\x18\t \x01(\tR\x06gender*=\n" +
 	"\rLanguageLevel\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\n" +
 	"\n" +

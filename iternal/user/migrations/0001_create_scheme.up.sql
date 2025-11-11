@@ -1,5 +1,7 @@
 create table users (
     username varchar(50) PRIMARY KEY,
+    first_name varchar(50),
+    last_name varchar(50),
     email varchar(100) unique not null,
     password_hash text not null,
     age int,

@@ -43,6 +43,8 @@ func (h *UserHandler) GetProfile(c echo.Context) error {
 
 	profile := UserProfileResponse{
 		Username:  res.User.Username,
+		FirstName: res.User.FirstName,
+		LastName:  res.User.LastName,
         Email:     res.User.Email,
         Age:       res.User.Age,
         Gender:    res.User.Gender,

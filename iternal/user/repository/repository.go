@@ -23,9 +23,9 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) erro
 	defer tx.Rollback()
 
 	_, err = tx.ExecContext(ctx,
-		`INSERT INTO users (username, email, password_hash, age, gender)
-		 VALUES ($1, $2, $3, $4, $5)`,
-		user.Username, user.Email, user.Password, user.Age, user.Gender,
+		`INSERT INTO users (username, first_name, last_name, email, password_hash, age, gender)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		user.Username, user.FirstName, user.LastName, user.Email, user.Password, user.Age, user.Gender,
 	)
 	if err != nil {
 		return err
@@ -60,11 +60,11 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 	u := &models.User{}
 
 	err := r.db.QueryRowContext(ctx,
-		`SELECT username, email, password_hash, age, gender
+		`SELECT username, first_name, last_name, email, password_hash, age, gender
 		 FROM users
 		 WHERE username=$1`,
 		username,
-	).Scan(&u.Username, &u.Email, &u.Password, &u.Age, &u.Gender)
+	).Scan(&u.Username, &u.FirstName, &u.LastName, &u.Email, &u.Password, &u.Age, &u.Gender)
 	if err != nil {
 		return nil, err
 	}

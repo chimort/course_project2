@@ -4,6 +4,8 @@ import "github.com/chimort/course_project2/api/proto/sharedpb"
 
 type UserProfileResponse struct {
 	Username  string                 `json:"username"`
+	FirstName string 				 `json:"first_name"`
+	LastName  string 				 `json:"last_name"`
 	Email     string                 `json:"email"`
 	Age       int32                  `json:"age"`
 	Gender    string                 `json:"gender"`
