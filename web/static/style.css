@@ -40,3 +40,8 @@ label {
   max-height:300px; 
   overflow:auto; 
 }
+#edit-profile-form {
+  border-top:1px solid #ddd;
+  margin-top:16px;
+  padding-top:12px;
+}

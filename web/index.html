@@ -15,6 +15,7 @@
       <button id="btn-profile">Profile</button>
     </div>
 
+    <!-- Register -->
     <div id="panel-register" class="panel">
       <h2>Register</h2>
       <label>Username <input id="reg-username" /></label>
@@ -68,6 +69,7 @@
       <pre id="reg-result" class="result"></pre>
     </div>
 
+    <!-- Login -->
     <div id="panel-login" class="panel" style="display:none">
       <h2>Login</h2>
       <label>Username <input id="login-username" /></label>
@@ -76,14 +78,62 @@
       <pre id="login-result" class="result"></pre>
     </div>
 
+    <!-- Profile -->
     <div id="panel-profile" class="panel" style="display:none">
       <h2>Profile</h2>
       <div>
         <button id="btn-get-profile">Get profile</button>
         <button id="btn-refresh-token">Refresh access token</button>
         <button id="btn-logout">Logout</button>
+        <button id="btn-edit-profile">Edit Profile</button>
       </div>
       <pre id="profile-result" class="result"></pre>
+
+      <!-- Форма обновления -->
+      <div id="edit-profile-form" style="display:none; margin-top:16px;">
+        <h3>Edit profile</h3>
+        <label>First Name <input id="upd-first-name" /></label>
+        <label>Last Name <input id="upd-last-name" /></label>
+        <label>Age <input id="upd-age" type="number" /></label>
+
+         <div class="group">
+          <div>Languages:</div>
+          <div>
+            <label>
+              <input type="checkbox" name="edit-lang" value="en" /> English
+              <select name="edit-lang-level-en">
+                <option value="">-- Select level --</option>
+                <option value="1">Native</option>
+                <option value="2">Medium</option>
+                <option value="3">Low</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label>
+              <input type="checkbox" name="edit-lang" value="ru" /> Russian
+              <select name="edit-lang-level-ru">
+                <option value="">-- Select level --</option>
+                <option value="1">Native</option>
+                <option value="2">Medium</option>
+                <option value="3">Low</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+
+        <div class="group">
+          <div>Interests:</div>
+          <label><input type="checkbox" name="upd-interest" value="music" /> Music</label>
+          <label><input type="checkbox" name="upd-interest" value="movies" /> Movies</label>
+          <label><input type="checkbox" name="upd-interest" value="sport" /> Sport</label>
+          <label><input type="checkbox" name="upd-interest" value="books" /> Books</label>
+        </div>
+
+        <button id="do-update-profile">Save changes</button>
+        <pre id="update-result" class="result"></pre>
+      </div>
     </div>
   </div>
 
