@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/chimort/course_project2/iternal/user/models"
 )
@@ -118,4 +120,68 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 	}
 
 	return u, nil
+}
+
+func (r *UserRepository) UpdateUser(ctx context.Context, username string, updates map[string]interface{}) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	userFields := []string{"first_name", "last_name", "age"}
+	setParts := []string{}
+	args := []interface{}{}
+	i := 1
+
+	for _, field := range userFields {
+		if val, ok := updates[field]; ok {
+			setParts = append(setParts, fmt.Sprintf("%s = $%d", field, i))
+			args = append(args, val)
+			i++
+		}
+	}
+	if len(setParts) > 0 {
+		args = append(args, username)
+		query := fmt.Sprintf("update users set %s where username = $%d", strings.Join(setParts, ", "), i)
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return err
+		}
+	}
+
+	if langsRaw, ok := updates["languages"]; ok {
+		langs := langsRaw.([]models.UserLanguage)
+		if _, err := tx.ExecContext(ctx, "DELETE FROM user_languages WHERE username=$1", username); err != nil {
+			return err
+		}
+		for _, l := range langs {
+			_, err := tx.ExecContext(ctx,
+				`INSERT INTO user_languages (username, language_id, proficiency_level)
+				 VALUES ($1, (SELECT id FROM languages WHERE lang_name=$2), $3)`,
+				username, l.Language, l.Level,
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if intsRaw, ok := updates["interests"]; ok {
+		ints := intsRaw.([]models.UserInterest)
+		if _, err := tx.ExecContext(ctx, "DELETE FROM user_interests WHERE username=$1", username); err != nil {
+			return err
+		}
+		for _, i := range ints {
+			_, err := tx.ExecContext(ctx,
+				`INSERT INTO user_interests (username, interest_id)
+				 VALUES ($1, (SELECT id FROM interests WHERE interest_name=$2))`,
+				username, i.Interest,
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
 }

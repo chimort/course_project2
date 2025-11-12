@@ -64,6 +64,39 @@ func (s *UserServer) GetProfile(ctx context.Context, req *userpb.GetProfileReque
 	return &userpb.GetProfileResponse{User: buildUserPb(user, false)}, nil
 }
 
+func (s *UserServer) UpdateProfile(ctx context.Context, req *userpb.UpdateProfileRequest) (*userpb.UpdateProfileResponse, error) {
+	username, ok := ctx.Value(middleware.UsernameKey).(string)
+	if !ok || username == "" {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	user := req.User
+	updates := make(map[string]interface{})
+
+	if user.FirstName != "" {
+		updates["first_name"] = user.FirstName
+	}
+	if user.LastName != "" {
+		updates["last_name"] = user.LastName
+	}
+	if user.Age != 0 {
+		updates["age"] = int(user.Age)
+	}
+	if len(user.Languages) > 0 {
+		updates["languages"] = converter.FromPbLanguages(user.Languages)
+	}
+	if len(user.Interests) > 0 {
+		updates["interests"] = converter.FromPbInterests(user.Interests)
+	}
+
+	err := s.service.UpdateProfile(ctx, username, updates)
+	if err != nil {
+		return &userpb.UpdateProfileResponse{Status: "failed"}, err
+	}
+
+	return &userpb.UpdateProfileResponse{Status: "success"}, nil
+}
+
 func buildUserPb(user *models.User, includePassword bool) *sharedpb.User {
 	pw := ""
 	if includePassword {

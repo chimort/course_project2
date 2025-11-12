@@ -89,9 +89,67 @@ get_profile_new_token() {
   echo "Profile with new token: $RESPONSE"
 }
 
+update_profile() {
+  echo "=== 6. Update profile ==="
+  RESPONSE=$(curl -s -X PATCH "$BASE_URL/v1/profile" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -d "{
+      \"user\": {
+        \"first_name\": \"UpdatedFirst\",
+        \"last_name\": \"UpdatedLast\",
+        \"age\": 25,
+        \"languages\": [{\"name\":\"en\",\"level\":1}],
+        \"interests\": [{\"name\":\"books\"},{\"name\":\"movies\"}]
+      }
+    }")
+  echo "Update profile response: $RESPONSE"
+}
+
+# Проверяем обновлённый профиль
+get_profile_after_update() {
+  echo "=== 7. Get profile after update ==="
+  RESPONSE=$(curl -s -X POST "$BASE_URL/v1/profile" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "X-Refresh-Token: $REFRESH_TOKEN" \
+    -d "{}")
+  echo "Profile after update: $RESPONSE"
+}
+
+update_profile_partial() {
+  echo "=== 6. Update profile partially ==="
+  RESPONSE=$(curl -s -X PATCH "$BASE_URL/v1/profile" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -d "{
+      \"user\": {
+        \"first_name\": \"PartiallyUpdated\",
+        \"age\": 30,
+        \"interests\": [{\"name\":\"music\"}]
+      }
+    }")
+  echo "Partial update response: $RESPONSE"
+}
+
+# Проверяем профиль после частичного обновления
+get_profile_after_partial_update() {
+  echo "=== 7. Get profile after partial update ==="
+  RESPONSE=$(curl -s -X POST "$BASE_URL/v1/profile" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "X-Refresh-Token: $REFRESH_TOKEN" \
+    -d "{}")
+  echo "Profile after partial update: $RESPONSE"
+}
+
 # Основной запуск
 register_user || echo "User might already exist, skipping..."
 login_user
 get_profile
 refresh_tokens
 get_profile_new_token
+update_profile
+get_profile_after_update
+update_profile_partial
+get_profile_after_partial_update

@@ -35,3 +35,8 @@ func (s *UserService) GetUser(ctx context.Context, username string) (*models.Use
 	s.log.Info("fetching user", "username", username)
 	return s.repo.GetUserByUsername(ctx, username)
 }
+
+func (s *UserService) UpdateProfile(ctx context.Context, username string, updates map[string]interface{}) error {
+	s.log.Info("updating user profile", "username", username, "updates", updates)
+	return s.repo.UpdateUser(ctx, username, updates)
+}

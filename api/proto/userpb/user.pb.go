@@ -279,6 +279,94 @@ func (x *GetProfileResponse) GetUser() *sharedpb.User {
 	return nil
 }
 
+type UpdateProfileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *sharedpb.User         `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateProfileRequest) Reset() {
+	*x = UpdateProfileRequest{}
+	mi := &file_userpb_user_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateProfileRequest) ProtoMessage() {}
+
+func (x *UpdateProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_userpb_user_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateProfileRequest.ProtoReflect.Descriptor instead.
+func (*UpdateProfileRequest) Descriptor() ([]byte, []int) {
+	return file_userpb_user_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UpdateProfileRequest) GetUser() *sharedpb.User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+type UpdateProfileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateProfileResponse) Reset() {
+	*x = UpdateProfileResponse{}
+	mi := &file_userpb_user_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateProfileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateProfileResponse) ProtoMessage() {}
+
+func (x *UpdateProfileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_userpb_user_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateProfileResponse.ProtoReflect.Descriptor instead.
+func (*UpdateProfileResponse) Descriptor() ([]byte, []int) {
+	return file_userpb_user_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpdateProfileResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
 var File_userpb_user_proto protoreflect.FileDescriptor
 
 const file_userpb_user_proto_rawDesc = "" +
@@ -294,13 +382,18 @@ const file_userpb_user_proto_rawDesc = "" +
 	"\x04user\x18\x01 \x01(\v2\x0e.sharedpb.UserR\x04user\"\x13\n" +
 	"\x11GetProfileRequest\"8\n" +
 	"\x12GetProfileResponse\x12\"\n" +
-	"\x04user\x18\x01 \x01(\v2\x0e.sharedpb.UserR\x04user2\xeb\x01\n" +
+	"\x04user\x18\x01 \x01(\v2\x0e.sharedpb.UserR\x04user\":\n" +
+	"\x14UpdateProfileRequest\x12\"\n" +
+	"\x04user\x18\x01 \x01(\v2\x0e.sharedpb.UserR\x04user\"/\n" +
+	"\x15UpdateProfileResponse\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status2\xd1\x02\n" +
 	"\vUserService\x12C\n" +
 	"\n" +
 	"CreateUser\x12\x19.userpb.CreateUserRequest\x1a\x1a.userpb.CreateUserResponse\x12:\n" +
 	"\aGetUser\x12\x16.userpb.GetUserRequest\x1a\x17.userpb.GetUserResponse\x12[\n" +
 	"\n" +
-	"GetProfile\x12\x19.userpb.GetProfileRequest\x1a\x1a.userpb.GetProfileResponse\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/profileB<Z:github.com/chimort/course_project2/api/proto/userpb;userpbb\x06proto3"
+	"GetProfile\x12\x19.userpb.GetProfileRequest\x1a\x1a.userpb.GetProfileResponse\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/profile\x12d\n" +
+	"\rUpdateProfile\x12\x1c.userpb.UpdateProfileRequest\x1a\x1d.userpb.UpdateProfileResponse\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*2\v/v1/profileB<Z:github.com/chimort/course_project2/api/proto/userpb;userpbb\x06proto3"
 
 var (
 	file_userpb_user_proto_rawDescOnce sync.Once
@@ -314,31 +407,36 @@ func file_userpb_user_proto_rawDescGZIP() []byte {
 	return file_userpb_user_proto_rawDescData
 }
 
-var file_userpb_user_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_userpb_user_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_userpb_user_proto_goTypes = []any{
-	(*CreateUserRequest)(nil),  // 0: userpb.CreateUserRequest
-	(*CreateUserResponse)(nil), // 1: userpb.CreateUserResponse
-	(*GetUserRequest)(nil),     // 2: userpb.GetUserRequest
-	(*GetUserResponse)(nil),    // 3: userpb.GetUserResponse
-	(*GetProfileRequest)(nil),  // 4: userpb.GetProfileRequest
-	(*GetProfileResponse)(nil), // 5: userpb.GetProfileResponse
-	(*sharedpb.User)(nil),      // 6: sharedpb.User
+	(*CreateUserRequest)(nil),     // 0: userpb.CreateUserRequest
+	(*CreateUserResponse)(nil),    // 1: userpb.CreateUserResponse
+	(*GetUserRequest)(nil),        // 2: userpb.GetUserRequest
+	(*GetUserResponse)(nil),       // 3: userpb.GetUserResponse
+	(*GetProfileRequest)(nil),     // 4: userpb.GetProfileRequest
+	(*GetProfileResponse)(nil),    // 5: userpb.GetProfileResponse
+	(*UpdateProfileRequest)(nil),  // 6: userpb.UpdateProfileRequest
+	(*UpdateProfileResponse)(nil), // 7: userpb.UpdateProfileResponse
+	(*sharedpb.User)(nil),         // 8: sharedpb.User
 }
 var file_userpb_user_proto_depIdxs = []int32{
-	6, // 0: userpb.CreateUserRequest.user:type_name -> sharedpb.User
-	6, // 1: userpb.GetUserResponse.user:type_name -> sharedpb.User
-	6, // 2: userpb.GetProfileResponse.user:type_name -> sharedpb.User
-	0, // 3: userpb.UserService.CreateUser:input_type -> userpb.CreateUserRequest
-	2, // 4: userpb.UserService.GetUser:input_type -> userpb.GetUserRequest
-	4, // 5: userpb.UserService.GetProfile:input_type -> userpb.GetProfileRequest
-	1, // 6: userpb.UserService.CreateUser:output_type -> userpb.CreateUserResponse
-	3, // 7: userpb.UserService.GetUser:output_type -> userpb.GetUserResponse
-	5, // 8: userpb.UserService.GetProfile:output_type -> userpb.GetProfileResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	8, // 0: userpb.CreateUserRequest.user:type_name -> sharedpb.User
+	8, // 1: userpb.GetUserResponse.user:type_name -> sharedpb.User
+	8, // 2: userpb.GetProfileResponse.user:type_name -> sharedpb.User
+	8, // 3: userpb.UpdateProfileRequest.user:type_name -> sharedpb.User
+	0, // 4: userpb.UserService.CreateUser:input_type -> userpb.CreateUserRequest
+	2, // 5: userpb.UserService.GetUser:input_type -> userpb.GetUserRequest
+	4, // 6: userpb.UserService.GetProfile:input_type -> userpb.GetProfileRequest
+	6, // 7: userpb.UserService.UpdateProfile:input_type -> userpb.UpdateProfileRequest
+	1, // 8: userpb.UserService.CreateUser:output_type -> userpb.CreateUserResponse
+	3, // 9: userpb.UserService.GetUser:output_type -> userpb.GetUserResponse
+	5, // 10: userpb.UserService.GetProfile:output_type -> userpb.GetProfileResponse
+	7, // 11: userpb.UserService.UpdateProfile:output_type -> userpb.UpdateProfileResponse
+	8, // [8:12] is the sub-list for method output_type
+	4, // [4:8] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_userpb_user_proto_init() }
@@ -352,7 +450,7 @@ func file_userpb_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_userpb_user_proto_rawDesc), len(file_userpb_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

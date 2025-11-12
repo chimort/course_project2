@@ -15,6 +15,12 @@ service UserService {
             body: "*"
         };
     };
+    rpc UpdateProfile (UpdateProfileRequest) returns (UpdateProfileResponse) {
+        option (google.api.http) = {
+            patch: "/v1/profile"
+            body: "*"
+        };
+    };
 }
 
 message CreateUserRequest {
@@ -38,4 +44,12 @@ message GetProfileRequest {}
 
 message GetProfileResponse {
     sharedpb.User user = 1;
+}
+
+message UpdateProfileRequest {
+    sharedpb.User user = 1;
+}
+
+message UpdateProfileResponse {
+    string status = 1;
 }
