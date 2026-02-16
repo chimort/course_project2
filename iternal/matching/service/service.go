@@ -35,8 +35,7 @@ func (s *MatchingService) JoinQueue(ctx context.Context, req *matchingpb.JoinQue
 	if err == nil {
 		s.log.Warn("user already in queue", "username", req.Username)
 		return &matchingpb.JoinQueueResponse{Ok: true}, nil
-	}
-	if err != nil && err != redis.Nil {
+	} else if err != redis.Nil {
 		s.log.Error("failed to check existing score", "error", err)
 		return &matchingpb.JoinQueueResponse{Ok: false}, err
 	}
