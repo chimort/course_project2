@@ -50,6 +50,21 @@ login_user() {
   echo "Refresh token: $REFRESH_TOKEN"
 }
 
+# Проверяем online (matching-service)
+check_online() {
+  echo "=== 2.5. Send heartbeat to matching-service ==="
+  RESPONSE=$(curl -s -X POST "$BASE_URL/v1/online" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -d "{\"username\":\"$USERNAME\"}")
+  echo "AddOnline response: $RESPONSE"
+
+  echo "=== 2.6. List online users ==="
+  RESPONSE=$(curl -s -X GET "$BASE_URL/v1/online" \
+    -H "Authorization: Bearer $ACCESS_TOKEN")
+  echo "Online users: $RESPONSE"
+}
+
 # Получаем профиль с access token
 get_profile() {
   echo "=== 3. Get profile with access token ==="
@@ -141,11 +156,14 @@ get_profile_after_partial_update() {
     -H "X-Refresh-Token: $REFRESH_TOKEN" \
     -d "{}")
   echo "Profile after partial update: $RESPONSE"
+
+  check_online
 }
 
 # Основной запуск
 register_user || echo "User might already exist, skipping..."
 login_user
+check_online
 get_profile
 refresh_tokens
 get_profile_new_token

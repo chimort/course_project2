@@ -26,7 +26,6 @@ func NewAuthService(userClient userpb.UserServiceClient, log *slog.Logger) *Auth
 
 func (s *AuthService) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
 	s.log.Info("register request received", "username", req.User.Username)
-	fmt.Printf("DEBUG1 CreateUser: langs=%+v, ints=%+v\n", req.User.Languages, req.User.Interests)
 	user := req.GetUser()
 	ctxInternal := metadata.AppendToOutgoingContext(context.Background(), "internal", "true")
 	_, err := s.userClient.CreateUser(ctxInternal, &userpb.CreateUserRequest{User: user})

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/chimort/course_project2/api/proto/authpb"
+	"github.com/chimort/course_project2/api/proto/matchingpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
@@ -29,6 +30,11 @@ func main() {
 	if err := userpb.RegisterUserServiceHandlerFromEndpoint(ctx, mux, "user-service:50051", opts); err != nil {
 		log.Error("failed to register user gateway", "error", err)
 		return
+	}
+
+	if err := matchingpb.RegisterMatchingServiceHandlerFromEndpoint(ctx, mux, "matching-service:50053", opts); err != nil {
+    	log.Error("failed to register matching gateway", "error", err)
+    	return
 	}
 
 	e := echo.New()

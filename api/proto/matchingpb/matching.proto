@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package matchingpb;
+
+option go_package = "github.com/chimort/course_project2/api/proto/matchingpb";
+
+import "google/api/annotations.proto";
+import "google/api/http.proto";
+
+service MatchingService {
+  rpc JoinQueue(JoinQueueRequest) returns (JoinQueueResponse) {
+    option (google.api.http) = {
+      post: "/v1/matching/join"
+      body: "*"
+    };
+  }
+
+  rpc LeaveQueue(LeaveQueueRequest) returns (LeaveQueueResponse) {
+    option (google.api.http) = {
+      post: "/v1/matching/leave"
+      body: "*"
+    };
+  }
+
+  rpc ListQueue(ListQueueRequest) returns (ListQueueResponse) {
+    option (google.api.http) = {
+      get: "/v1/matching/list"
+    };
+  }
+}
+
+enum MatchMode {
+  MATCH_MODE_UNSPECIFIED = 0;
+  MATCH_MODE_DEFAULT = 1;
+  MATCH_MODE_LANGUAGE = 2;
+  MATCH_MODE_INTEREST = 3;
+}
+
+message JoinQueueRequest {
+  string username = 1;
+  MatchMode mode = 2;
+}
+
+message JoinQueueResponse {
+  bool ok = 1;
+}
+
+message LeaveQueueRequest {
+  string username = 1;
+}
+
+message LeaveQueueResponse {
+  bool ok = 1;
+}
+
+message ListQueueRequest {}
+
+message ListQueueResponse {
+  repeated string usernames = 1;
+}
