@@ -7,10 +7,12 @@ import (
 	"os"
 
 	"github.com/chimort/course_project2/api/proto/matchingpb"
-	"github.com/chimort/course_project2/iternal/matching/service"
+	"github.com/chimort/course_project2/api/proto/userpb"
+	matching "github.com/chimort/course_project2/iternal/matching/service"
 	"github.com/chimort/course_project2/iternal/pkg/logger"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -25,9 +27,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	matchingService := matching.NewMatchingService(rdb, logg)
-	matchingServer := matching.NewMatchingServer(matchingService)
+	userConn, err := grpc.Dial(
+		"user-service:50051",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		logg.Error("failed to dial user-service", "error", err)
+		os.Exit(1)
+	}
+	defer userConn.Close()
 
+	userClient := userpb.NewUserServiceClient(userConn)
+
+	matchingService := matching.NewMatchingService(rdb, userClient, logg)
+	matchingServer := matching.NewMatchingServer(matchingService)
+	
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {
 		logg.Error("failed to listen", "error", err)
