@@ -2,14 +2,14 @@ package matching
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
-	"log/slog"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/redis/go-redis/v9"
 	"github.com/chimort/course_project2/api/proto/matchingpb"
+	"github.com/redis/go-redis/v9"
 )
 
 // Интеграционный тест для MatchingService с in-memory redis (miniredis).
@@ -21,20 +21,10 @@ func TestMatchingService_JoinFindLeaveFlow(t *testing.T) {
 	}
 	defer mr.Close()
 
-	// подключение go-redis к miniredis
-	rdb := redis.NewClient(&redis.Options{
-		Addr: mr.Addr(),
-	})
-
-	// простой logger
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	logg := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
-
-	// создаём сервис (userClient = nil => он будет использовать встроенный хардкод в fetchProfiles)
 	svc := NewMatchingService(rdb, nil, logg)
-
 	ctx := context.Background()
-
-	// Очистим (на всякий)
 	_ = rdb.FlushDB(ctx).Err()
 
 	// Добавим троих пользователей в очередь
@@ -47,7 +37,6 @@ func TestMatchingService_JoinFindLeaveFlow(t *testing.T) {
 		if err != nil {
 			t.Fatalf("JoinQueue(%s) failed: %v", u, err)
 		}
-		// небольшая пауза чтобы score различался
 		time.Sleep(5 * time.Millisecond)
 	}
 
@@ -60,16 +49,25 @@ func TestMatchingService_JoinFindLeaveFlow(t *testing.T) {
 		t.Fatalf("expected %d users in queue, got %d (%v)", len(users), len(listResp.Usernames), listResp.Usernames)
 	}
 
-	// Попробуем найти для alice лучший матч (в хардкоде fetchProfiles у нас bob лучше)
-	match, err := svc.FindBestMatch(ctx, "alice", matchingpb.MatchMode_MATCH_MODE_LANGUAGE)
+	// Подменяем fetchProfiles так, чтобы была понятная логика (hardcode)
+	svc.SetFetchFunc(func(ctx context.Context, usernames []string) (map[string]UserProfile, error) {
+		out := map[string]UserProfile{
+			"alice": {ID: "alice", Age: 28, Hobbies: []string{"movies"}, Language: "English"},
+			"bob":   {ID: "bob", Age: 30, Hobbies: []string{"movies", "reading"}, Language: "English"},
+			"carol": {ID: "carol", Age: 40, Hobbies: []string{"cooking"}, Language: "Spanish"},
+		}
+		return out, nil
+	})
+
+	// Найдём матч для alice
+	res, err := svc.FindBestMatch(ctx, "alice", matchingpb.MatchMode_MATCH_MODE_LANGUAGE)
 	if err != nil {
 		t.Fatalf("FindBestMatch failed: %v", err)
 	}
-	if match == "" {
+	if res == nil {
 		t.Fatalf("expected a match for alice, got empty")
 	}
-	// В хардкоде мы возвращаем bob/others — просто проверим, что вернулся не сам alice
-	if match == "alice" {
+	if res.Username == "alice" {
 		t.Fatalf("match for alice is alice (self), unexpected")
 	}
 
@@ -78,7 +76,6 @@ func TestMatchingService_JoinFindLeaveFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListQueue after match failed: %v", err)
 	}
-	// ожидание: осталось как минимум 1 пользователь
 	if len(listResp2.Usernames) >= len(listResp.Usernames) {
 		t.Fatalf("expected queue to shrink after matching; before=%d after=%d", len(listResp.Usernames), len(listResp2.Usernames))
 	}

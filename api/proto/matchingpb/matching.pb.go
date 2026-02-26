@@ -25,10 +25,11 @@ const (
 type MatchMode int32
 
 const (
-	MatchMode_MATCH_MODE_UNSPECIFIED MatchMode = 0
-	MatchMode_MATCH_MODE_DEFAULT     MatchMode = 1
-	MatchMode_MATCH_MODE_LANGUAGE    MatchMode = 2
-	MatchMode_MATCH_MODE_INTEREST    MatchMode = 3
+	MatchMode_MATCH_MODE_UNSPECIFIED   MatchMode = 0
+	MatchMode_MATCH_MODE_DEFAULT       MatchMode = 1
+	MatchMode_MATCH_MODE_LANGUAGE      MatchMode = 2
+	MatchMode_MATCH_MODE_INTEREST      MatchMode = 3
+	MatchMode_MATCH_MODE_DISCUSS_MOVIE MatchMode = 4
 )
 
 // Enum value maps for MatchMode.
@@ -38,12 +39,14 @@ var (
 		1: "MATCH_MODE_DEFAULT",
 		2: "MATCH_MODE_LANGUAGE",
 		3: "MATCH_MODE_INTEREST",
+		4: "MATCH_MODE_DISCUSS_MOVIE",
 	}
 	MatchMode_value = map[string]int32{
-		"MATCH_MODE_UNSPECIFIED": 0,
-		"MATCH_MODE_DEFAULT":     1,
-		"MATCH_MODE_LANGUAGE":    2,
-		"MATCH_MODE_INTEREST":    3,
+		"MATCH_MODE_UNSPECIFIED":   0,
+		"MATCH_MODE_DEFAULT":       1,
+		"MATCH_MODE_LANGUAGE":      2,
+		"MATCH_MODE_INTEREST":      3,
+		"MATCH_MODE_DISCUSS_MOVIE": 4,
 	}
 )
 
@@ -355,12 +358,13 @@ const file_api_proto_matchingpb_matching_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x12\n" +
 	"\x10ListQueueRequest\"1\n" +
 	"\x11ListQueueResponse\x12\x1c\n" +
-	"\tusernames\x18\x01 \x03(\tR\tusernames*q\n" +
+	"\tusernames\x18\x01 \x03(\tR\tusernames*\x8f\x01\n" +
 	"\tMatchMode\x12\x1a\n" +
 	"\x16MATCH_MODE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12MATCH_MODE_DEFAULT\x10\x01\x12\x17\n" +
 	"\x13MATCH_MODE_LANGUAGE\x10\x02\x12\x17\n" +
-	"\x13MATCH_MODE_INTEREST\x10\x032\xca\x02\n" +
+	"\x13MATCH_MODE_INTEREST\x10\x03\x12\x1c\n" +
+	"\x18MATCH_MODE_DISCUSS_MOVIE\x10\x042\xca\x02\n" +
 	"\x0fMatchingService\x12f\n" +
 	"\tJoinQueue\x12\x1c.matchingpb.JoinQueueRequest\x1a\x1d.matchingpb.JoinQueueResponse\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/v1/matching/join\x12j\n" +
 	"\n" +

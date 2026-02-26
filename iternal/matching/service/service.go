@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/chimort/course_project2/api/proto/matchingpb"
@@ -17,13 +18,20 @@ const (
 	userQueueKey = "queue:user:" // + username
 )
 
-// ----- сервис -----
+// MatchingResult describes result of matching
+type MatchingResult struct {
+	Username        string
+	Reason          string
+	CommonInterests []string
+}
+
+// MatchingService - main service
 type MatchingService struct {
 	redis      *redis.Client
 	userClient userpb.UserServiceClient
 	log        *slog.Logger
 
-	// Для тестов: позволяет подменить fetchProfiles
+	// for tests: ability to override profile fetcher
 	fetchFunc func(ctx context.Context, usernames []string) (map[string]UserProfile, error)
 }
 
@@ -35,12 +43,12 @@ func NewMatchingService(r *redis.Client, userClient userpb.UserServiceClient, lo
 	}
 }
 
-// Устанавливаем fetchFunc (только для тестов)
+// SetFetchFunc used by tests to inject fake profiles
 func (s *MatchingService) SetFetchFunc(f func(ctx context.Context, usernames []string) (map[string]UserProfile, error)) {
 	s.fetchFunc = f
 }
 
-// ----- очередь -----
+// JoinQueue - add user to sorted set with timestamp score
 func (s *MatchingService) JoinQueue(ctx context.Context, req *matchingpb.JoinQueueRequest) (*matchingpb.JoinQueueResponse, error) {
 	if req == nil || req.Username == "" {
 		return &matchingpb.JoinQueueResponse{Ok: false}, nil
@@ -72,6 +80,7 @@ func (s *MatchingService) JoinQueue(ctx context.Context, req *matchingpb.JoinQue
 	return &matchingpb.JoinQueueResponse{Ok: true}, nil
 }
 
+// LeaveQueue - remove user from queue
 func (s *MatchingService) LeaveQueue(ctx context.Context, req *matchingpb.LeaveQueueRequest) (*matchingpb.LeaveQueueResponse, error) {
 	if req == nil || req.Username == "" {
 		return &matchingpb.LeaveQueueResponse{Ok: false}, nil
@@ -85,6 +94,7 @@ func (s *MatchingService) LeaveQueue(ctx context.Context, req *matchingpb.LeaveQ
 	return &matchingpb.LeaveQueueResponse{Ok: true}, nil
 }
 
+// ListQueue - get all usernames in queue
 func (s *MatchingService) ListQueue(ctx context.Context, req *matchingpb.ListQueueRequest) (*matchingpb.ListQueueResponse, error) {
 	users, err := s.redis.ZRange(ctx, queueKey, 0, -1).Result()
 	if err != nil {
@@ -95,14 +105,21 @@ func (s *MatchingService) ListQueue(ctx context.Context, req *matchingpb.ListQue
 	return &matchingpb.ListQueueResponse{Usernames: users}, nil
 }
 
-// ----- fetch профилей -----
+// fetchQueueUsernames - helper
+func (s *MatchingService) fetchQueueUsernames(ctx context.Context, limit int64) ([]string, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	return s.redis.ZRange(ctx, queueKey, 0, limit-1).Result()
+}
+
+// fetchProfiles - either calls user service or uses injected fetchFunc or returns simple defaults
 func (s *MatchingService) fetchProfiles(ctx context.Context, usernames []string) (map[string]UserProfile, error) {
 	if s.fetchFunc != nil {
 		return s.fetchFunc(ctx, usernames)
 	}
 
 	if s.userClient == nil {
-		// fallback: пустой профиль для продакшена
 		out := make(map[string]UserProfile, len(usernames))
 		for _, u := range usernames {
 			out[u] = UserProfile{ID: u, Age: 30, Hobbies: []string{}, Language: "English"}
@@ -127,24 +144,45 @@ func (s *MatchingService) fetchProfiles(ctx context.Context, usernames []string)
 			h = append(h, it.Name)
 		}
 		out[uname] = UserProfile{ID: u.Username, Age: int(u.Age), Hobbies: h, Language: lang}
+		// tiny throttle
 		time.Sleep(5 * time.Millisecond)
 	}
 	return out, nil
 }
 
-// ----- fetch usernames из очереди -----
-func (s *MatchingService) fetchQueueUsernames(ctx context.Context, limit int64) ([]string, error) {
-	if limit <= 0 {
-		limit = 100
+// helper: intersect of hobbies (max 2 returned)
+func intersect(a, b []string) []string {
+	set := make(map[string]struct{}, len(a))
+	for _, x := range a {
+		set[strings.ToLower(x)] = struct{}{}
 	}
-	return s.redis.ZRange(ctx, queueKey, 0, limit-1).Result()
+	out := make([]string, 0, 2)
+	for _, x := range b {
+		if _, ok := set[strings.ToLower(x)]; ok {
+			out = append(out, x)
+			if len(out) >= 2 {
+				break
+			}
+		}
+	}
+	return out
 }
 
-// ----- FindBestMatch -----
-func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mode matchingpb.MatchMode) (string, error) {
+func hasMovie(p UserProfile) bool {
+	for _, h := range p.Hobbies {
+		if strings.EqualFold(h, "movies") {
+			return true
+		}
+	}
+	return false
+}
+
+// FindBestMatch - core algorithm
+// returns MatchingResult or nil if none found
+func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mode matchingpb.MatchMode) (*MatchingResult, error) {
 	all, err := s.fetchQueueUsernames(ctx, 200)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var candidates []string
@@ -154,28 +192,31 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 		}
 	}
 	if len(candidates) == 0 {
-		return "", nil
+		return nil, nil
 	}
 
 	usernamesToFetch := append([]string{username}, candidates...)
 	profiles, err := s.fetchProfiles(ctx, usernamesToFetch)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
 	me, ok := profiles[username]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 
 	score, err := s.redis.ZScore(ctx, queueKey, username).Result()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
 	waitSec := (float64(time.Now().UnixMilli()) - score) / 1000.0
 
 	baseThreshold := 0.8
 	minThreshold := 0.4
 	decPerMin := 0.05
+
 	threshold := baseThreshold - (waitSec/60.0)*decPerMin
 	if threshold < minThreshold {
 		threshold = minThreshold
@@ -186,6 +227,7 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 		total float64
 		bd    ScoreBreakdown
 	}
+
 	var good []candidateScore
 	var allScores []candidateScore
 
@@ -194,52 +236,99 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 		if !ok {
 			continue
 		}
+
+		if mode == matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE {
+			if !hasMovie(me) || !hasMovie(p) {
+				continue
+			}
+		}
+
 		var prefs Preferences
 		switch mode {
 		case matchingpb.MatchMode_MATCH_MODE_LANGUAGE:
 			prefs = Preferences{WeightLanguage: 0.6, WeightHobbies: 0.2, WeightAge: 0.2}
 		case matchingpb.MatchMode_MATCH_MODE_INTEREST:
 			prefs = Preferences{WeightHobbies: 0.6, WeightLanguage: 0.2, WeightAge: 0.2}
+		case matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE:
+			prefs = Preferences{WeightLanguage: 0.5, WeightAge: 0.4, WeightHobbies: 0.1}
 		default:
 			prefs = Preferences{}
 		}
+
 		bd := CompatibilityDynamic(me, p, prefs)
+
 		allScores = append(allScores, candidateScore{id: c, total: bd.Total, bd: bd})
+
 		if bd.Total >= threshold {
 			good = append(good, candidateScore{id: c, total: bd.Total, bd: bd})
 		}
 	}
 
+	removeFromQueue := func(u1, u2 string) {
+		_ = s.redis.ZRem(ctx, queueKey, u1, u2).Err()
+		_ = s.redis.Del(ctx, userQueueKey+u1, userQueueKey+u2).Err()
+	}
+
+	buildResult := func(chosen string, bd ScoreBreakdown) *MatchingResult {
+		var reasonKey string
+
+		if mode == matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE {
+			reasonKey = "movies"
+		} else {
+			max := bd.WeightedLang
+			reasonKey = "language"
+
+			if bd.WeightedHobby > max {
+				max = bd.WeightedHobby
+				reasonKey = "shared_interests"
+			}
+			if bd.WeightedAge > max {
+				reasonKey = "similar_age"
+			}
+		}
+
+		reason := "best match: " + reasonKey
+		common := intersect(me.Hobbies, profiles[chosen].Hobbies)
+
+		removeFromQueue(username, chosen)
+
+		return &MatchingResult{
+			Username:        chosen,
+			Reason:          reason,
+			CommonInterests: common,
+		}
+	}
+
+	// 1) many good
 	if len(good) >= 5 {
 		sort.Slice(good, func(i, j int) bool { return good[i].total > good[j].total })
+
 		top := good
 		if len(top) > 5 {
 			top = top[:5]
 		}
-		rand.Seed(time.Now().UnixNano())
-		chosen := top[rand.Intn(len(top))].id
-		_ = s.redis.ZRem(ctx, queueKey, username, chosen).Err()
-		_ = s.redis.Del(ctx, userQueueKey+username, userQueueKey+chosen).Err()
-		return chosen, nil
+
+		src := rand.NewSource(time.Now().UnixNano())
+		rng := rand.New(src)
+		chosen := top[rng.Intn(len(top))]
+
+		return buildResult(chosen.id, chosen.bd), nil
 	}
 
+	// 2) best good
 	if len(good) > 0 {
 		sort.Slice(good, func(i, j int) bool { return good[i].total > good[j].total })
-		chosen := good[0].id
-		_ = s.redis.ZRem(ctx, queueKey, username, chosen).Err()
-		_ = s.redis.Del(ctx, userQueueKey+username, userQueueKey+chosen).Err()
-		return chosen, nil
+		chosen := good[0]
+		return buildResult(chosen.id, chosen.bd), nil
 	}
 
+	// 3) fallback long wait
 	waitMin := waitSec / 60.0
-	longWaitThresholdMin := 5.0
-	if waitMin >= longWaitThresholdMin && len(allScores) > 0 {
+	if waitMin >= 5.0 && len(allScores) > 0 {
 		sort.Slice(allScores, func(i, j int) bool { return allScores[i].total > allScores[j].total })
-		chosen := allScores[0].id
-		_ = s.redis.ZRem(ctx, queueKey, username, chosen).Err()
-		_ = s.redis.Del(ctx, userQueueKey+username, userQueueKey+chosen).Err()
-		return chosen, nil
+		chosen := allScores[0]
+		return buildResult(chosen.id, chosen.bd), nil
 	}
 
-	return "", nil
+	return nil, nil
 }

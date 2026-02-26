@@ -26,16 +26,30 @@ func setupService(t *testing.T) (*MatchingService, *redis.Client, context.Contex
 	return svc, rdb, context.Background()
 }
 
-// ----------------- 1 -----------------
+//
+// ----------------- 1. LANGUAGE MODE -----------------
+//
+
 func TestFindBestMatch_PicksBestByScore_Logged(t *testing.T) {
 	svc, rdb, ctx := setupService(t)
 	_ = rdb.FlushDB(ctx).Err()
 
 	users := []string{"alice", "bob", "carol"}
 	for _, u := range users {
-		_, _ = svc.JoinQueue(ctx, &matchingpb.JoinQueueRequest{Username: u, Mode: matchingpb.MatchMode_MATCH_MODE_LANGUAGE})
+		_, _ = svc.JoinQueue(ctx, &matchingpb.JoinQueueRequest{
+			Username: u,
+			Mode:     matchingpb.MatchMode_MATCH_MODE_LANGUAGE,
+		})
 		time.Sleep(1 * time.Millisecond)
 	}
+
+	svc.SetFetchFunc(func(ctx context.Context, usernames []string) (map[string]UserProfile, error) {
+		return map[string]UserProfile{
+			"alice": {ID: "alice", Age: 28, Hobbies: []string{"movies", "reading"}, Language: "English"},
+			"bob":   {ID: "bob", Age: 35, Hobbies: []string{"cooking"}, Language: "Spanish"},
+			"carol": {ID: "carol", Age: 27, Hobbies: []string{"movies", "reading"}, Language: "English"},
+		}, nil
+	})
 
 	profiles, _ := svc.fetchProfiles(ctx, users)
 	me := profiles["alice"]
@@ -45,76 +59,168 @@ func TestFindBestMatch_PicksBestByScore_Logged(t *testing.T) {
 		s  float64
 	}
 	var list []cs
+
 	for _, c := range []string{"bob", "carol"} {
 		bd := CompatibilityDynamic(me, profiles[c], Preferences{})
 		list = append(list, cs{id: c, s: bd.Total})
-		t.Logf("alice -> %s: total=%.3f", c, bd.Total)
 	}
 
 	sort.Slice(list, func(i, j int) bool { return list[i].s > list[j].s })
-	top := list[0].id
+	expectedBest := list[0].id
 
-	chosen, err := svc.FindBestMatch(ctx, "alice", matchingpb.MatchMode_MATCH_MODE_LANGUAGE)
+	res, err := svc.FindBestMatch(ctx, "alice", matchingpb.MatchMode_MATCH_MODE_LANGUAGE)
 	if err != nil {
 		t.Fatalf("FindBestMatch error: %v", err)
 	}
-	if chosen != top {
-		t.Fatalf("expected best=%s, got %s", top, chosen)
+	if res == nil {
+		t.Fatalf("expected non-nil result")
+	}
+	if res.Username != expectedBest {
+		t.Fatalf("expected best=%s, got %s", expectedBest, res.Username)
 	}
 }
 
-// ----------------- Complex profiles -----------------
-func TestFindBestMatch_ComplexProfiles(t *testing.T) {
-	mr, _ := miniredis.Run()
-	defer mr.Close()
+//
+// ----------------- 2. DISCUSS MOVIE -----------------
+//
 
-	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	logg := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
-	svc := NewMatchingService(rdb, nil, logg)
-
-	ctx := context.Background()
+func TestFindBestMatch_DiscussMovie_Basic(t *testing.T) {
+	svc, rdb, ctx := setupService(t)
 	_ = rdb.FlushDB(ctx).Err()
 
-	AllHobbies := []string{"reading", "movies", "gaming", "cooking", "yoga", "travel", "sports", "music", "coding", "painting"}
-	meProfile := UserProfile{ID: "me", Age: 28, Hobbies: AllHobbies, Language: "English"}
-
-	candidates := map[string]UserProfile{
-		"a": {ID: "a", Age: 30, Hobbies: AllHobbies[:5], Language: "Spanish"},
-		"b": {ID: "b", Age: 25, Hobbies: AllHobbies[5:], Language: "English"},
-		"c": {ID: "c", Age: 28, Hobbies: []string{"coding", "reading"}, Language: "German"},
-		"d": {ID: "d", Age: 35, Hobbies: []string{"travel", "music"}, Language: "French"},
-	}
-
-	usernames := []string{"me", "a", "b", "c", "d"}
-	for _, u := range usernames {
-		if _, err := svc.JoinQueue(ctx, &matchingpb.JoinQueueRequest{Username: u, Mode: matchingpb.MatchMode_MATCH_MODE_DEFAULT}); err != nil {
-			t.Fatalf("JoinQueue %s failed: %v", u, err)
-		}
+	users := []string{"me", "m1", "other"}
+	for _, u := range users {
+		_, _ = svc.JoinQueue(ctx, &matchingpb.JoinQueueRequest{
+			Username: u,
+			Mode:     matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE,
+		})
 		time.Sleep(1 * time.Millisecond)
 	}
 
 	svc.SetFetchFunc(func(ctx context.Context, usernames []string) (map[string]UserProfile, error) {
-		out := map[string]UserProfile{"me": meProfile}
-		for k, v := range candidates {
-			out[k] = v
-		}
-		return out, nil
+		return map[string]UserProfile{
+			"me":    {ID: "me", Age: 28, Hobbies: []string{"movies", "reading"}, Language: "English"},
+			"m1":    {ID: "m1", Age: 26, Hobbies: []string{"movies", "gaming"}, Language: "English"},
+			"other": {ID: "other", Age: 30, Hobbies: []string{"cooking"}, Language: "English"},
+		}, nil
 	})
 
-	profiles, _ := svc.fetchProfiles(ctx, usernames)
-	me := profiles["me"]
-
-	for _, c := range []string{"a", "b", "c", "d"} {
-		bd := CompatibilityDynamic(me, profiles[c], Preferences{WeightLanguage: 0.5, WeightHobbies: 0.4, WeightAge: 0.1})
-		t.Logf("me -> %s: total=%.3f (lang=%.3f hobby=%.3f age=%.3f)", c, bd.Total, bd.WeightedLang, bd.WeightedHobby, bd.WeightedAge)
-	}
-
-	chosen, err := svc.FindBestMatch(ctx, "me", matchingpb.MatchMode_MATCH_MODE_DEFAULT)
+	res, err := svc.FindBestMatch(ctx, "me", matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE)
 	if err != nil {
 		t.Fatalf("FindBestMatch error: %v", err)
 	}
-	if chosen == "" {
-		t.Fatalf("expected a match, got empty")
+	if res == nil {
+		t.Fatalf("expected match result, got nil")
 	}
-	t.Logf("FindBestMatch chose: %s", chosen)
+	if res.Username != "m1" {
+		t.Fatalf("expected m1, got %s", res.Username)
+	}
+	if res.Reason != "best match: movies" {
+		t.Fatalf("expected 'best match: movies', got %q", res.Reason)
+	}
+}
+
+//
+// ---------- NEW: No one with movies ----------
+//
+
+func TestFindBestMatch_DiscussMovie_NoCandidates(t *testing.T) {
+	svc, rdb, ctx := setupService(t)
+	_ = rdb.FlushDB(ctx).Err()
+
+	users := []string{"me", "u1"}
+	for _, u := range users {
+		_, _ = svc.JoinQueue(ctx, &matchingpb.JoinQueueRequest{
+			Username: u,
+			Mode:     matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE,
+		})
+		time.Sleep(1 * time.Millisecond)
+	}
+
+	svc.SetFetchFunc(func(ctx context.Context, usernames []string) (map[string]UserProfile, error) {
+		return map[string]UserProfile{
+			"me": {ID: "me", Age: 28, Hobbies: []string{"movies"}, Language: "English"},
+			"u1": {ID: "u1", Age: 28, Hobbies: []string{"cooking"}, Language: "English"},
+		}, nil
+	})
+
+	res, err := svc.FindBestMatch(ctx, "me", matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if res != nil {
+		t.Fatalf("expected nil match, got %+v", res)
+	}
+}
+
+//
+// ---------- NEW: Language priority inside movie mode ----------
+//
+
+func TestFindBestMatch_DiscussMovie_LanguagePriority(t *testing.T) {
+	svc, rdb, ctx := setupService(t)
+	_ = rdb.FlushDB(ctx).Err()
+
+	users := []string{"me", "sameLang", "diffLang"}
+	for _, u := range users {
+		_, _ = svc.JoinQueue(ctx, &matchingpb.JoinQueueRequest{
+			Username: u,
+			Mode:     matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE,
+		})
+		time.Sleep(1 * time.Millisecond)
+	}
+
+	svc.SetFetchFunc(func(ctx context.Context, usernames []string) (map[string]UserProfile, error) {
+		return map[string]UserProfile{
+			"me":       {ID: "me", Age: 28, Hobbies: []string{"movies"}, Language: "English"},
+			"sameLang": {ID: "sameLang", Age: 35, Hobbies: []string{"movies"}, Language: "English"},
+			"diffLang": {ID: "diffLang", Age: 28, Hobbies: []string{"movies"}, Language: "Spanish"},
+		}, nil
+	})
+
+	res, err := svc.FindBestMatch(ctx, "me", matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if res == nil {
+		t.Fatalf("expected match")
+	}
+	if res.Username != "sameLang" {
+		t.Fatalf("expected sameLang due to language priority, got %s", res.Username)
+	}
+}
+
+//
+// ----------------- 3. DEFAULT COMPLEX -----------------
+//
+
+func TestFindBestMatch_DefaultComplex(t *testing.T) {
+	svc, rdb, ctx := setupService(t)
+	_ = rdb.FlushDB(ctx).Err()
+
+	all := []string{"me", "a", "b", "c"}
+	for _, u := range all {
+		_, _ = svc.JoinQueue(ctx, &matchingpb.JoinQueueRequest{
+			Username: u,
+			Mode:     matchingpb.MatchMode_MATCH_MODE_DEFAULT,
+		})
+		time.Sleep(1 * time.Millisecond)
+	}
+
+	svc.SetFetchFunc(func(ctx context.Context, usernames []string) (map[string]UserProfile, error) {
+		return map[string]UserProfile{
+			"me": {ID: "me", Age: 28, Hobbies: []string{"movies", "travel"}, Language: "English"},
+			"a":  {ID: "a", Age: 35, Hobbies: []string{"cooking"}, Language: "Spanish"},
+			"b":  {ID: "b", Age: 27, Hobbies: []string{"travel"}, Language: "English"},
+			"c":  {ID: "c", Age: 50, Hobbies: []string{"gaming"}, Language: "German"},
+		}, nil
+	})
+
+	res, err := svc.FindBestMatch(ctx, "me", matchingpb.MatchMode_MATCH_MODE_DEFAULT)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if res == nil {
+		t.Fatalf("expected match")
+	}
 }

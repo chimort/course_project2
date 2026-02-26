@@ -34,6 +34,7 @@ enum MatchMode {
   MATCH_MODE_DEFAULT = 1;
   MATCH_MODE_LANGUAGE = 2;
   MATCH_MODE_INTEREST = 3;
+  MATCH_MODE_DISCUSS_MOVIE = 4;
 }
 
 message JoinQueueRequest {
