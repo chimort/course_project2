@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chimort/course_project2/api/proto/chatpb"
 	"github.com/chimort/course_project2/api/proto/matchingpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
 	"github.com/redis/go-redis/v9"
@@ -29,16 +30,19 @@ type MatchingResult struct {
 type MatchingService struct {
 	redis      *redis.Client
 	userClient userpb.UserServiceClient
+	chatClient chatpb.ChatServiceClient
 	log        *slog.Logger
 
 	// for tests: ability to override profile fetcher
 	fetchFunc func(ctx context.Context, usernames []string) (map[string]UserProfile, error)
 }
 
-func NewMatchingService(r *redis.Client, userClient userpb.UserServiceClient, log *slog.Logger) *MatchingService {
+func NewMatchingService(r *redis.Client, userClient userpb.UserServiceClient, 
+		chatClient chatpb.ChatServiceClient, log *slog.Logger) *MatchingService {
 	return &MatchingService{
 		redis:      r,
 		userClient: userClient,
+		chatClient: chatClient,
 		log:        log.With("service", "matching_service"),
 	}
 }
@@ -292,6 +296,25 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 
 		removeFromQueue(username, chosen)
 
+		if s.chatClient != nil {
+		resp, err := s.chatClient.CreateChat(ctx, &chatpb.CreateChatRequest{
+			User1: username,
+			User2: chosen,
+		})
+		if err != nil {
+			s.log.Error("failed to create chat",
+				"user1", username,
+				"user2", chosen,
+				"error", err,
+			)
+		} else {
+			s.log.Info("chat created via chat-service",
+				"chat_id", resp.ChatId,
+				"user1", username,
+				"user2", chosen,
+			)
+		}
+	}
 		return &MatchingResult{
 			Username:        chosen,
 			Reason:          reason,

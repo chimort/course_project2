@@ -22,7 +22,7 @@ func setupService(t *testing.T) (*MatchingService, *redis.Client, context.Contex
 
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	logg := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
-	svc := NewMatchingService(rdb, nil, logg)
+	svc := NewMatchingService(rdb, nil, nil, logg)
 	return svc, rdb, context.Background()
 }
 

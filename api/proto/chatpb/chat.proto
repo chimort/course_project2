@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package chatpb;
+
+option go_package = "github.com/chimort/course_project2/api/proto/chatpb";
+
+import "google/api/annotations.proto";
+
+service ChatService {
+  rpc CreateChat(CreateChatRequest) returns (CreateChatResponse) {
+    option (google.api.http) = {
+      post: "/v1/chat"
+      body: "*"
+    };
+  }
+
+  rpc ListUserChats(ListUserChatsRequest) returns (ListUserChatsResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/{user}/chats"
+    };
+  }
+}
+
+message CreateChatRequest {
+  string user1 = 1;
+  string user2 = 2;
+}
+
+message CreateChatResponse {
+  bool ok = 1;
+  string chat_id = 2;
+}
+
+message ListUserChatsRequest {
+  string user = 1;
+}
+
+message ChatInfo {
+  string chat_id = 1;
+  repeated string participants = 2;
+}
+
+message ListUserChatsResponse {
+  repeated ChatInfo chats = 1;
+}

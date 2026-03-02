@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/chimort/course_project2/api/proto/authpb"
+	"github.com/chimort/course_project2/api/proto/chatpb"
 	"github.com/chimort/course_project2/api/proto/matchingpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -35,6 +36,11 @@ func main() {
 	if err := matchingpb.RegisterMatchingServiceHandlerFromEndpoint(ctx, mux, "matching-service:50053", opts); err != nil {
     	log.Error("failed to register matching gateway", "error", err)
     	return
+	}
+
+	if err := chatpb.RegisterChatServiceHandlerFromEndpoint(ctx, mux, "chat-service:50054", opts); err != nil {
+		log.Error("failed to register chat gateway", "error", err)
+		return
 	}
 
 	e := echo.New()

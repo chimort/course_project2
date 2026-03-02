@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/chimort/course_project2/api/proto/chatpb"
 	"github.com/chimort/course_project2/api/proto/matchingpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
 	matching "github.com/chimort/course_project2/iternal/matching/service"
@@ -27,7 +28,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	userConn, err := grpc.Dial(
+	userConn, err := grpc.NewClient(
 		"user-service:50051",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -39,7 +40,20 @@ func main() {
 
 	userClient := userpb.NewUserServiceClient(userConn)
 
-	matchingService := matching.NewMatchingService(rdb, userClient, logg)
+
+	chatConn, err := grpc.NewClient(
+		"chat-service:50054", 
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+
+	if err != nil {
+		logg.Error("failed to dial user-service", "error", err)
+		os.Exit(1)
+	}
+	defer chatConn.Close()
+	chatClient := chatpb.NewChatServiceClient(chatConn)
+
+	matchingService := matching.NewMatchingService(rdb, userClient, chatClient, logg)
 	matchingServer := matching.NewMatchingServer(matchingService)
 	
 	lis, err := net.Listen("tcp", ":50053")

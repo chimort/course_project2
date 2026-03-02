@@ -23,7 +23,7 @@ func TestMatchingService_JoinFindLeaveFlow(t *testing.T) {
 
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	logg := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
-	svc := NewMatchingService(rdb, nil, logg)
+	svc := NewMatchingService(rdb, nil, nil, logg)
 	ctx := context.Background()
 	_ = rdb.FlushDB(ctx).Err()
 
