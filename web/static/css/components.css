@@ -1,0 +1,143 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.field span {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: rgba(79,70,229,0.35);
+  box-shadow: 0 0 0 4px rgba(79,70,229,0.08);
+}
+
+.input-error {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12) !important;
+}
+
+.group {
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid rgba(15,23,42,0.05);
+  border-radius: 14px;
+  background: #fbfdff;
+}
+
+.group-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.inline-check-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.inline-check-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.inline-check-row select {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 12px;
+  background: #fff;
+  margin: 0;
+  cursor: pointer;
+}
+
+.meta-pill {
+  border: 1px solid var(--line);
+  background: var(--soft);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.result {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,0.05);
+  background: #f8fafc;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 260px;
+  font-size: 13px;
+}
+
+.ui-message {
+  white-space: normal;
+  font-size: 14px;
+  line-height: 1.5;
+  max-height: none;
+}
+
+.ui-message.info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: rgba(29,78,216,0.08);
+}
+
+.ui-message.success {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: rgba(4,120,87,0.08);
+}
+
+.ui-message.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: rgba(185,28,28,0.08);
+}
+
+@media (max-width: 760px) {
+  .queue-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
