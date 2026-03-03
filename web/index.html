@@ -8,61 +8,92 @@
 </head>
 <body>
   <div class="container">
-    <h1>Auth demo</h1>
+    <div class="topbar">
+      <h1>Auth demo</h1>
+      <button id="btn-logout-top" class="ghost-btn" style="display:none;">Logout</button>
+    </div>
+
     <div class="tabs">
       <button id="btn-register">Register</button>
       <button id="btn-login">Login</button>
-      <button id="btn-profile">Profile</button>
+      <button id="btn-profile" style="display:none;">Profile</button>
+      <button id="btn-matching" style="display:none;">Matching</button>
     </div>
 
     <!-- Register -->
     <div id="panel-register" class="panel">
       <h2>Register</h2>
-      <label>Username <input id="reg-username" /></label>
-      <label>First Name <input id="reg-first-name" /></label>
-      <label>Last Name <input id="reg-last-name" /></label>
-      <label>Email <input id="reg-email" type="email" /></label>
-      <label>Password <input id="reg-password" type="password" /></label>
-      <label>Age <input id="reg-age" type="number" min="0" /></label>
-      <label>Gender 
-        <select id="reg-gender">
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-        </select>
-      </label>
 
-      <div class="group"> 
-        <div>Languages:</div>
-        <div>
-          <label>
-            <input type="checkbox" name="lang" value="en" /> English
-            <select name="lang_level_en">
-              <option value="">-- Select level --</option>
-              <option value="1">Native</option>
-              <option value="2">Medium</option>
-              <option value="3">Low</option>
-            </select>
-          </label>
+      <div class="form-grid">
+        <label class="field">
+          <span>Username</span>
+          <input id="reg-username" />
+        </label>
+
+        <label class="field">
+          <span>First Name</span>
+          <input id="reg-first-name" />
+        </label>
+
+        <label class="field">
+          <span>Last Name</span>
+          <input id="reg-last-name" />
+        </label>
+
+        <label class="field">
+          <span>Email</span>
+          <input id="reg-email" type="email" />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input id="reg-password" type="password" />
+        </label>
+
+        <label class="field">
+          <span>Age</span>
+          <input id="reg-age" type="number" min="0" />
+        </label>
+
+        <label class="field">
+          <span>Gender</span>
+          <select id="reg-gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Languages</div>
+        <div class="inline-check-row">
+          <label><input type="checkbox" name="reg-lang" value="en" /> English</label>
+          <select name="reg-lang-level-en">
+            <option value="">-- Select level --</option>
+            <option value="1">Native</option>
+            <option value="2">Medium</option>
+            <option value="3">Low</option>
+          </select>
         </div>
-        <div>
-          <label>
-            <input type="checkbox" name="lang" value="ru" /> Russian
-             <select name="lang_level_ru">
-              <option value="">-- Select level --</option>
-              <option value="1">Native</option>
-              <option value="2">Medium</option>
-              <option value="3">Low</option>
-            </select>
-          </label>
+        <div class="inline-check-row">
+          <label><input type="checkbox" name="reg-lang" value="ru" /> Russian</label>
+          <select name="reg-lang-level-ru">
+            <option value="">-- Select level --</option>
+            <option value="1">Native</option>
+            <option value="2">Medium</option>
+            <option value="3">Low</option>
+          </select>
         </div>
       </div>
 
       <div class="group">
-        <div>Interests:</div>
-        <label><input type="checkbox" name="interest" value="music" /> Music</label>
-        <label><input type="checkbox" name="interest" value="movies" /> Movies</label>
-        <label><input type="checkbox" name="interest" value="sport" /> Sport</label>
-        <label><input type="checkbox" name="interest" value="books" /> Books</label>
+        <div class="group-title">Interests</div>
+        <div class="chips-wrap">
+          <label class="chip-check"><input type="checkbox" name="interest" value="music" /> <span>Music</span></label>
+          <label class="chip-check"><input type="checkbox" name="interest" value="movies" /> <span>Movies</span></label>
+          <label class="chip-check"><input type="checkbox" name="interest" value="sport" /> <span>Sport</span></label>
+          <label class="chip-check"><input type="checkbox" name="interest" value="books" /> <span>Books</span></label>
+        </div>
       </div>
 
       <button id="do-register">Register</button>
@@ -72,8 +103,19 @@
     <!-- Login -->
     <div id="panel-login" class="panel" style="display:none">
       <h2>Login</h2>
-      <label>Username <input id="login-username" /></label>
-      <label>Password <input id="login-password" type="password" /></label>
+
+      <div class="form-grid single-col">
+        <label class="field">
+          <span>Username</span>
+          <input id="login-username" />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input id="login-password" type="password" />
+        </label>
+      </div>
+
       <button id="do-login">Login</button>
       <pre id="login-result" class="result"></pre>
     </div>
@@ -81,58 +123,130 @@
     <!-- Profile -->
     <div id="panel-profile" class="panel" style="display:none">
       <h2>Profile</h2>
-      <div>
-        <button id="btn-get-profile">Get profile</button>
-        <button id="btn-refresh-token">Refresh access token</button>
-        <button id="btn-logout">Logout</button>
-        <button id="btn-edit-profile">Edit Profile</button>
-      </div>
-      <pre id="profile-result" class="result"></pre>
 
-      <!-- Форма обновления -->
-      <div id="edit-profile-form" style="display:none; margin-top:16px;">
-        <h3>Edit profile</h3>
-        <label>First Name <input id="upd-first-name" /></label>
-        <label>Last Name <input id="upd-last-name" /></label>
-        <label>Age <input id="upd-age" type="number" /></label>
-
-         <div class="group">
-          <div>Languages:</div>
+      <div class="profile-card">
+        <div class="profile-hero">
+          <div class="avatar-circle" id="profile-avatar">U</div>
           <div>
-            <label>
-              <input type="checkbox" name="edit-lang" value="en" /> English
+            <div class="profile-name" id="profile-display-name">User</div>
+            <div class="profile-username" id="profile-display-username">@username</div>
+          </div>
+        </div>
+
+        <div class="profile-meta">
+          <div class="meta-pill" id="profile-age-pill">Age: —</div>
+          <div class="meta-pill" id="profile-gender-pill">Gender: —</div>
+        </div>
+
+        <div class="profile-section">
+          <div class="section-head">
+            <h3>Interests</h3>
+            <button id="toggle-interests" class="text-btn">Hide</button>
+          </div>
+          <div id="profile-interests" class="chips-wrap"></div>
+        </div>
+
+        <div class="profile-section">
+          <div class="section-head">
+            <h3>Languages</h3>
+            <button id="toggle-languages" class="text-btn">Hide</button>
+          </div>
+          <div id="profile-languages" class="chips-wrap"></div>
+        </div>
+
+        <button id="btn-edit-profile" class="secondary-btn">Edit profile</button>
+
+        <div id="edit-profile-form" style="display:none; margin-top:16px;">
+          <h3>Edit profile</h3>
+
+          <div class="form-grid">
+            <label class="field">
+              <span>First Name</span>
+              <input id="upd-first-name" />
+            </label>
+
+            <label class="field">
+              <span>Last Name</span>
+              <input id="upd-last-name" />
+            </label>
+
+            <label class="field">
+              <span>Age</span>
+              <input id="upd-age" type="number" />
+            </label>
+          </div>
+
+          <div class="group">
+            <div class="group-title">Languages</div>
+            <div class="inline-check-row">
+              <label><input type="checkbox" name="edit-lang" value="en" /> English</label>
               <select name="edit-lang-level-en">
                 <option value="">-- Select level --</option>
                 <option value="1">Native</option>
                 <option value="2">Medium</option>
                 <option value="3">Low</option>
               </select>
-            </label>
-          </div>
-          <div>
-            <label>
-              <input type="checkbox" name="edit-lang" value="ru" /> Russian
+            </div>
+            <div class="inline-check-row">
+              <label><input type="checkbox" name="edit-lang" value="ru" /> Russian</label>
               <select name="edit-lang-level-ru">
                 <option value="">-- Select level --</option>
                 <option value="1">Native</option>
                 <option value="2">Medium</option>
                 <option value="3">Low</option>
               </select>
-            </label>
+            </div>
           </div>
+
+          <div class="group">
+            <div class="group-title">Interests</div>
+            <div class="chips-wrap">
+              <label class="chip-check"><input type="checkbox" name="upd-interest" value="music" /> <span>Music</span></label>
+              <label class="chip-check"><input type="checkbox" name="upd-interest" value="movies" /> <span>Movies</span></label>
+              <label class="chip-check"><input type="checkbox" name="upd-interest" value="sport" /> <span>Sport</span></label>
+              <label class="chip-check"><input type="checkbox" name="upd-interest" value="books" /> <span>Books</span></label>
+            </div>
+          </div>
+
+          <button id="do-update-profile">Save changes</button>
+          <pre id="update-result" class="result"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Matching -->
+    <div id="panel-matching" class="panel" style="display:none">
+      <h2>Find a match</h2>
+
+      <div class="match-card">
+        <label class="field">
+          <span>Search mode</span>
+          <select id="match-mode">
+            <option value="1">Default</option>
+            <option value="2">Language</option>
+            <option value="3">Interest</option>
+            <option value="4">Discuss movie</option>
+          </select>
+        </label>
+
+        <div class="match-actions">
+          <button id="btn-start-search">Start search</button>
+          <button id="btn-leave-search" class="secondary-btn">Leave queue</button>
         </div>
 
+        <div id="match-status" class="match-status idle">Not searching</div>
 
-        <div class="group">
-          <div>Interests:</div>
-          <label><input type="checkbox" name="upd-interest" value="music" /> Music</label>
-          <label><input type="checkbox" name="upd-interest" value="movies" /> Movies</label>
-          <label><input type="checkbox" name="upd-interest" value="sport" /> Sport</label>
-          <label><input type="checkbox" name="upd-interest" value="books" /> Books</label>
+        <div id="queue-loader" class="queue-loader" style="display:none;">
+          <div class="pulse-ring"></div>
+          <div class="pulse-dot"></div>
         </div>
 
-        <button id="do-update-profile">Save changes</button>
-        <pre id="update-result" class="result"></pre>
+        <div id="queue-meta" class="queue-meta" style="display:none;">
+          <div>Queue size: <span id="queue-count">0</span></div>
+          <div>Waiting time: <span id="queue-wait-time">0s</span></div>
+        </div>
+
+        <pre id="match-result" class="result"></pre>
       </div>
     </div>
   </div>
