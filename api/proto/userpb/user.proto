@@ -21,6 +21,9 @@ service UserService {
             body: "*"
         };
     };
+    
+    // internal-only, no HTTP mapping
+    rpc GetUserForMatching(GetUserRequest) returns (GetUserResponse);
 }
 
 message CreateUserRequest {

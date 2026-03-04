@@ -28,7 +28,7 @@ func AuthUnaryInterceptor() grpc.UnaryServerInterceptor {
 			return nil, status.Error(codes.Unauthenticated, "missing metadata")
 		}
 
-		if val := md.Get("internal"); len(val) > 0 && val[0] == "true" {
+		if val := md.Get("iternal"); len(val) > 0 && val[0] == "true" {
     		return handler(ctx, req)
 		}
 

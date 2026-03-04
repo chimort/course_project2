@@ -27,7 +27,7 @@ func NewAuthService(userClient userpb.UserServiceClient, log *slog.Logger) *Auth
 func (s *AuthService) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
 	s.log.Info("register request received", "username", req.User.Username)
 	user := req.GetUser()
-	ctxInternal := metadata.AppendToOutgoingContext(context.Background(), "internal", "true")
+	ctxInternal := metadata.AppendToOutgoingContext(context.Background(), "iternal", "true")
 	_, err := s.userClient.CreateUser(ctxInternal, &userpb.CreateUserRequest{User: user})
 	if err != nil {
 		s.log.Error("failed to create user in user-service", "error", err)
@@ -40,7 +40,7 @@ func (s *AuthService) Register(ctx context.Context, req *authpb.RegisterRequest)
 func (s *AuthService) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
 	s.log.Info("login attempt", "username", req.Username)
 
-	md := metadata.Pairs("internal", "true")
+	md := metadata.Pairs("iternal", "true")
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	resp, err := s.userClient.GetUser(ctx, &userpb.GetUserRequest{Username: req.Username})
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, req *authpb.RefreshToken
 	if err != nil {
 		return nil, fmt.Errorf("invalid refresh token: %w", err)
 	}
-	md := metadata.Pairs("internal", "true")
+	md := metadata.Pairs("iternal", "true")
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	userResp, err := s.userClient.GetUser(ctx, &userpb.GetUserRequest{Username: claims.Username})
 	if err != nil {

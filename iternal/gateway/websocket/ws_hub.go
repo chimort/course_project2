@@ -1,0 +1,49 @@
+package gateway
+
+import (
+	"sync"
+
+	"github.com/gorilla/websocket"
+)
+
+type MatchEvent struct {
+	Type    string `json:"type"`
+	ChatID  string `json:"chat_id"`
+	Partner string `json:"partner"`
+}
+
+type WSHub struct {
+	mu    sync.RWMutex
+	conns map[string]*websocket.Conn // username -> conn
+}
+
+func NewWSHub() *WSHub {
+	return &WSHub{
+		conns: make(map[string]*websocket.Conn),
+	}
+}
+
+func (h *WSHub) Set(username string, conn *websocket.Conn) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.conns[username] = conn
+}
+
+func (h *WSHub) Remove(username string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if c, ok := h.conns[username]; ok {
+		_ = c.Close()
+		delete(h.conns, username)
+	}
+}
+
+func (h *WSHub) Send(username string, payload any) error {
+	h.mu.RLock()
+	conn, ok := h.conns[username]
+	h.mu.RUnlock()
+	if !ok {
+		return nil
+	}
+	return conn.WriteJSON(payload)
+}

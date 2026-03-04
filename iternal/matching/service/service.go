@@ -1,9 +1,12 @@
 package matching
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"log/slog"
 	"math/rand"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -12,6 +15,7 @@ import (
 	"github.com/chimort/course_project2/api/proto/matchingpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -32,6 +36,7 @@ type MatchingService struct {
 	userClient userpb.UserServiceClient
 	chatClient chatpb.ChatServiceClient
 	log        *slog.Logger
+	notifyURL  string
 
 	// for tests: ability to override profile fetcher
 	fetchFunc func(ctx context.Context, usernames []string) (map[string]UserProfile, error)
@@ -44,6 +49,7 @@ func NewMatchingService(r *redis.Client, userClient userpb.UserServiceClient,
 		userClient: userClient,
 		chatClient: chatClient,
 		log:        log.With("service", "matching_service"),
+		notifyURL: "http://gateway:8080/iternal/ws/match-found",
 	}
 }
 
@@ -133,7 +139,8 @@ func (s *MatchingService) fetchProfiles(ctx context.Context, usernames []string)
 
 	out := make(map[string]UserProfile, len(usernames))
 	for _, uname := range usernames {
-		resp, err := s.userClient.GetUser(ctx, &userpb.GetUserRequest{Username: uname})
+		iternalCtx := metadata.AppendToOutgoingContext(ctx, "iternal", "true")
+		resp, err := s.userClient.GetUserForMatching(iternalCtx, &userpb.GetUserRequest{Username: uname})
 		if err != nil {
 			s.log.Warn("user service get failed", "username", uname, "err", err)
 			continue
@@ -313,6 +320,7 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 				"user1", username,
 				"user2", chosen,
 			)
+			s.notifyMatchFound(username, chosen, resp.ChatId)
 		}
 	}
 		return &MatchingResult{
@@ -354,4 +362,103 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 	}
 
 	return nil, nil
+}
+
+func (s *MatchingService) StartMatcher(ctx context.Context) {
+	ticker := time.NewTicker(500 * time.Millisecond)
+	s.log.Info("matcher started")
+
+	go func() {
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				s.log.Info("matcher stopped")
+				return
+
+			case <-ticker.C:
+				s.runMatchCycle(ctx)
+			}
+		}
+	}()
+}
+
+func (s *MatchingService) runMatchCycle(ctx context.Context) {
+	users, err := s.fetchQueueUsernames(ctx, 50)
+	if err != nil {
+		s.log.Warn("failed to fetch queue usernames", "error", err)
+		return
+	}
+
+	if len(users) < 2 {
+		return
+	}
+
+	for _, username := range users {
+		mode, err := s.getUserMode(ctx, username)
+		if err != nil {
+			continue
+		}
+
+		_, err = s.FindBestMatch(ctx, username, mode)
+		if err != nil {
+			s.log.Warn("FindBestMatch failed", "username", username, "error", err)
+		}
+	}
+}
+
+func (s *MatchingService) getUserMode(ctx context.Context, username string) (matchingpb.MatchMode, error) {
+	val, err := s.redis.HGet(ctx, userQueueKey+username, "mode").Result()
+	if err != nil {
+		return matchingpb.MatchMode_MATCH_MODE_DEFAULT, err
+	}
+
+	switch val {
+	case matchingpb.MatchMode_MATCH_MODE_LANGUAGE.String():
+		return matchingpb.MatchMode_MATCH_MODE_LANGUAGE, nil
+	case matchingpb.MatchMode_MATCH_MODE_INTEREST.String():
+		return matchingpb.MatchMode_MATCH_MODE_INTEREST, nil
+	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE.String():
+		return matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE, nil
+	default:
+		return matchingpb.MatchMode_MATCH_MODE_DEFAULT, nil
+	}
+}
+
+func (s *MatchingService) notifyMatchFound(user1, user2, chatID string) {
+	if s.notifyURL == "" {
+		return
+	}
+
+	body, err := json.Marshal(map[string]string{
+		"user1":   user1,
+		"user2":   user2,
+		"chat_id": chatID,
+	})
+	if err != nil {
+		s.log.Error("failed to marshal notify payload", "error", err)
+		return
+	}
+
+	req, err := http.NewRequest(http.MethodPost, s.notifyURL, bytes.NewBuffer(body))
+	if err != nil {
+		s.log.Error("failed to build notify request", "error", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		s.log.Error("failed to notify gateway", "error", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		s.log.Warn("gateway notify returned non-2xx", "status", resp.StatusCode)
+		return
+	}
+
+	s.log.Info("gateway notified about match", "user1", user1, "user2", user2, "chat_id", chatID)
 }

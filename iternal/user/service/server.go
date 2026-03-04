@@ -115,3 +115,21 @@ func buildUserPb(user *models.User, includePassword bool) *sharedpb.User {
 		Interests: converter.ToPbInterests(user.Interests),
 	}
 }
+
+func (s *UserServer) GetUserForMatching(
+	ctx context.Context,
+	req *userpb.GetUserRequest,
+) (*userpb.GetUserResponse, error) {
+	if req == nil || req.Username == "" {
+		return nil, fmt.Errorf("username is required")
+	}
+
+	user, err := s.service.GetUser(ctx, req.Username)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userpb.GetUserResponse{
+		User: buildUserPb(user, false),
+	}, nil
+}

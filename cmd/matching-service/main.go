@@ -54,6 +54,9 @@ func main() {
 	chatClient := chatpb.NewChatServiceClient(chatConn)
 
 	matchingService := matching.NewMatchingService(rdb, userClient, chatClient, logg)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	matchingService.StartMatcher(ctx)
 	matchingServer := matching.NewMatchingServer(matchingService)
 	
 	lis, err := net.Listen("tcp", ":50053")

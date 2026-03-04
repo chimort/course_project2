@@ -9,6 +9,8 @@ import (
 	"github.com/chimort/course_project2/api/proto/chatpb"
 	"github.com/chimort/course_project2/api/proto/matchingpb"
 	"github.com/chimort/course_project2/api/proto/userpb"
+	"github.com/chimort/course_project2/iternal/gateway/handlers"
+	gateway "github.com/chimort/course_project2/iternal/gateway/websocket"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"google.golang.org/grpc"
@@ -47,6 +49,13 @@ func main() {
 	e.HideBanner = true
 	e.File("/", "web/index.html")
 	e.Static("/static", "web/static")
+
+	hub := gateway.NewWSHub()
+	wsHandler := handlers.NewWSHandler(hub, log)
+
+	e.GET("/ws", wsHandler.HandleWS)
+
+	e.POST("iternal/ws/match-found", wsHandler.NotifyMatchFound)
 
 	e.Any("/v1/*", echo.WrapHandler(mux))
 
