@@ -1,5 +1,5 @@
 function showPanel(name) {
-  for (const id of ['register', 'login', 'profile', 'matching']) {
+  for (const id of ['register', 'login', 'profile', 'matching', 'chat']) {
     const el = document.getElementById(`panel-${id}`);
     if (el) el.style.display = id === name ? 'block' : 'none';
   }
@@ -176,4 +176,16 @@ function attachValidationListeners() {
       el.addEventListener('change', () => clearFieldInvalid(el));
     });
   });
+}
+
+function bindTabs() {
+  const btnRegister = document.getElementById('btn-register');
+  const btnLogin = document.getElementById('btn-login');
+  const btnProfile = document.getElementById('btn-profile');
+  const btnMatching = document.getElementById('btn-matching');
+
+  if (btnRegister) btnRegister.onclick = () => showPanel('register');
+  if (btnLogin) btnLogin.onclick = () => showPanel('login');
+  if (btnProfile) btnProfile.onclick = () => showPanel('profile');
+  if (btnMatching) btnMatching.onclick = () => showPanel('matching');
 }

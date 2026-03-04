@@ -1,3 +1,6 @@
+// web/static/js/matching.js
+// Depends on: storage.js (getStoredUsername/getAccessToken), ui helpers if you had them
+
 let queuePollTimer = null;
 let queueWaitTimer = null;
 let queueStartedAt = null;
@@ -5,12 +8,14 @@ let wasInQueue = false;
 
 function setMatchStatus(text, type = 'idle') {
   const el = document.getElementById('match-status');
+  if (!el) return;
   el.textContent = text;
   el.className = `match-status ${type}`;
 }
 
 function setMatchResult(obj) {
   const box = document.getElementById('match-result');
+  if (!box) return;
   box.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2);
 }
 
@@ -35,7 +40,6 @@ function stopQueueVisuals() {
     clearInterval(queueWaitTimer);
     queueWaitTimer = null;
   }
-
   queueStartedAt = null;
 }
 
@@ -51,7 +55,6 @@ async function refreshQueueState(username) {
     const r = await fetch('/v1/matching/list');
     const data = await r.json();
     const list = data.usernames || data.Usernames || [];
-
     document.getElementById('queue-count').textContent = list.length;
 
     const isInQueue = list.includes(username);
@@ -60,11 +63,13 @@ async function refreshQueueState(username) {
       wasInQueue = true;
       setMatchStatus('Searching for a partner...', 'searching');
     } else if (wasInQueue) {
+      // user disappeared from queue -> likely matched
       stopQueuePolling();
       stopQueueVisuals();
       wasInQueue = false;
-      setMatchStatus('You may have been matched. Check your chat.', 'success');
-      setMatchResult('User disappeared from queue. Possible match found.');
+
+      setMatchStatus('You may have been matched. Waiting for WS event...', 'success');
+      setMatchResult('Removed from queue. Expect "match_found" via WebSocket.');
     } else {
       setMatchStatus('Not searching', 'idle');
     }
@@ -80,88 +85,129 @@ function startQueuePolling(username) {
   queuePollTimer = setInterval(() => refreshQueueState(username), 3000);
 }
 
-async function handleStartSearch() {
-  const username = getStoredUsername();
-  const mode = parseInt(document.getElementById('match-mode').value, 10);
-
-  if (!username) {
-    setMatchStatus('Login first', 'error');
-    setMatchResult('No username found. Please login first.');
-    return;
-  }
-
-  setMatchResult('...joining');
-
+function redirectToChat(chatId, partner) {
+  // Save last chat for "history button" in profile (stub)
   try {
-    const r = await fetch('/v1/matching/join', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + getAccessToken()
-      },
-      body: JSON.stringify({ username, mode })
-    });
+    localStorage.setItem('lastChat', JSON.stringify({ chat_id: chatId, partner: partner }));
+  } catch (_) {}
 
-    const data = await r.json();
-    setMatchResult({ status: r.status, body: data });
+  const url = `/static/html/chat.html?chat_id=${encodeURIComponent(chatId)}&peer=${encodeURIComponent(partner)}`;
+  window.location.href = url;
+}
 
-    if (r.ok && data.ok) {
-      wasInQueue = true;
-      setMatchStatus('Searching for a partner...', 'searching');
-      startQueueVisuals();
-      startQueuePolling(username);
-    } else {
-      setMatchStatus('Failed to join queue', 'error');
+function handleWsEvent(msg) {
+  // Expected payload:
+  // { type: "match_found", chat_id: "4", partner: "username2" }
+  if (!msg || !msg.type) return;
+
+  if (msg.type === 'match_found') {
+    const chatId = msg.chat_id || msg.chatId;
+    const partner = msg.partner || msg.peer || msg.username;
+    if (chatId && partner) {
+      redirectToChat(chatId, partner);
+      return;
     }
-  } catch (e) {
-    setMatchStatus('Join request failed', 'error');
-    setMatchResult('Network error: ' + e.message);
+    console.log('[MATCH] match_found but missing fields:', msg);
   }
 }
 
-async function handleLeaveSearch() {
-  const username = getStoredUsername();
-
-  if (!username) {
-    setMatchStatus('No username found', 'error');
-    setMatchResult('Cannot leave queue: no username');
-    return;
-  }
-
-  setMatchStatus('Leaving queue...', 'idle');
-  setMatchResult('...leaving');
-
-  try {
-    const r = await fetch('/v1/matching/leave', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + getAccessToken()
-      },
-      body: JSON.stringify({ username })
-    });
-
-    const data = await r.json();
-    setMatchResult({ status: r.status, body: data });
-
-    if (r.ok && data.ok) {
-      wasInQueue = false;
-      stopQueuePolling();
-      stopQueueVisuals();
-      setMatchStatus('You left the queue', 'idle');
-      document.getElementById('queue-count').textContent = '0';
-      document.getElementById('queue-wait-time').textContent = '0s';
-    } else {
-      setMatchStatus('Failed to leave queue', 'error');
-    }
-  } catch (e) {
-    setMatchStatus('Leave request failed', 'error');
-    setMatchResult('Network error: ' + e.message);
-  }
-}
-
+// Buttons / UI binding
 function bindMatchingEvents() {
-  document.getElementById('btn-matching').onclick = () => showPanel('matching');
-  document.getElementById('btn-start-search').onclick = handleStartSearch;
-  document.getElementById('btn-leave-search').onclick = handleLeaveSearch;
+  const btnStart = document.getElementById('btn-start-search');
+  const btnLeave = document.getElementById('btn-leave-search');
+
+  if (btnStart) {
+    btnStart.onclick = async () => {
+      const username = getStoredUsername();
+      const mode = parseInt(document.getElementById('match-mode').value, 10);
+
+      if (!username) {
+        setMatchStatus('Login first', 'error');
+        setMatchResult('No username found. Please login first.');
+        return;
+      }
+
+      setMatchResult('Joining queue...');
+
+      try {
+        const r = await fetch('/v1/matching/join', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + getAccessToken()
+          },
+          body: JSON.stringify({ username, mode })
+        });
+
+        const data = await r.json().catch(() => ({}));
+
+        if (r.ok && data.ok) {
+          wasInQueue = true;
+          setMatchStatus('Searching for a partner...', 'searching');
+          startQueueVisuals();
+          startQueuePolling(username);
+          setMatchResult('In queue. Waiting for match...');
+        } else {
+          setMatchStatus('Failed to join queue', 'error');
+          setMatchResult({ status: r.status, body: data });
+        }
+      } catch (e) {
+        setMatchStatus('Join request failed', 'error');
+        setMatchResult('Network error: ' + e.message);
+      }
+    };
+  }
+
+  if (btnLeave) {
+    btnLeave.onclick = async () => {
+      const username = getStoredUsername();
+
+      if (!username) {
+        setMatchStatus('No username found', 'error');
+        setMatchResult('Cannot leave queue: no username');
+        return;
+      }
+
+      setMatchStatus('Leaving queue...', 'idle');
+      setMatchResult('Leaving...');
+
+      try {
+        const r = await fetch('/v1/matching/leave', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + getAccessToken()
+          },
+          body: JSON.stringify({ username })
+        });
+
+        const data = await r.json().catch(() => ({}));
+
+        if (r.ok && data.ok) {
+          wasInQueue = false;
+          stopQueuePolling();
+          stopQueueVisuals();
+          setMatchStatus('You left the queue', 'idle');
+          document.getElementById('queue-count').textContent = '0';
+          document.getElementById('queue-wait-time').textContent = '0s';
+          setMatchResult('Left queue.');
+        } else {
+          setMatchStatus('Failed to leave queue', 'error');
+          setMatchResult({ status: r.status, body: data });
+        }
+      } catch (e) {
+        setMatchStatus('Leave request failed', 'error');
+        setMatchResult('Network error: ' + e.message);
+      }
+    };
+  }
 }
+
+// expose for ws.js dispatch
+window.AppMatching = {
+  bindMatchingEvents,
+  handleWsEvent,
+  stopQueuePolling,
+  stopQueueVisuals,
+  resetState: () => { wasInQueue = false; }
+};

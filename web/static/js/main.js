@@ -1,7 +1,10 @@
+// web/static/js/main.js
+
 function initApp() {
+  bindTabs();
   bindAuthEvents();
   bindProfileEvents();
-  bindMatchingEvents();
+  if (window.AppMatching) window.AppMatching.bindMatchingEvents();
   attachValidationListeners();
 
   const hasAccess = !!getAccessToken();
@@ -11,6 +14,9 @@ function initApp() {
     setAuthorizedUI(true);
     showPanel('profile');
     loadProfile();
+
+    // auto connect ws on reload
+    if (window.AppWS) window.AppWS.connect(getStoredUsername());
   } else {
     setAuthorizedUI(false);
     showPanel('login');

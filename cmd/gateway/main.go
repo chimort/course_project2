@@ -47,7 +47,7 @@ func main() {
 
 	e := echo.New()
 	e.HideBanner = true
-	e.File("/", "web/index.html")
+	e.File("/", "web/static/html/index.html")
 	e.Static("/static", "web/static")
 
 	hub := gateway.NewWSHub()

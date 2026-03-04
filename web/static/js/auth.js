@@ -1,10 +1,16 @@
+// web/static/js/auth.js
+
 function logout() {
   clearTokens();
   clearUsername();
 
-  stopQueuePolling();
-  stopQueueVisuals();
-  wasInQueue = false;
+  if (window.AppWS) window.AppWS.close();
+
+  if (window.AppMatching) {
+    window.AppMatching.stopQueuePolling();
+    window.AppMatching.stopQueueVisuals();
+    window.AppMatching.resetState();
+  }
 
   closeEditProfileForm();
   resetLoginForm();
@@ -23,12 +29,7 @@ async function handleRegister() {
   const ageField = document.getElementById('reg-age');
 
   const requiredFields = [
-    usernameField,
-    firstNameField,
-    lastNameField,
-    emailField,
-    passwordField,
-    ageField
+    usernameField, firstNameField, lastNameField, emailField, passwordField, ageField
   ];
 
   if (!validateRequiredFields(requiredFields)) {
@@ -121,6 +122,9 @@ async function handleLogin() {
       saveTokens(access, refresh);
       saveUsername(username);
 
+      // connect WS right after login
+      if (window.AppWS) window.AppWS.connect(username);
+
       passwordField.value = '';
       clearMessage('login-result');
 
@@ -144,3 +148,6 @@ function bindAuthEvents() {
   document.getElementById('do-register').onclick = handleRegister;
   document.getElementById('do-login').onclick = handleLogin;
 }
+
+// expose if needed
+window.AppAuth = { bindAuthEvents, logout };
