@@ -1,4 +1,4 @@
-package gateway
+package websocket
 
 import (
 	"sync"
@@ -14,7 +14,7 @@ type MatchEvent struct {
 
 type WSHub struct {
 	mu    sync.RWMutex
-	conns map[string]*websocket.Conn // username -> conn
+	conns map[string]*websocket.Conn
 }
 
 func NewWSHub() *WSHub {
@@ -26,12 +26,14 @@ func NewWSHub() *WSHub {
 func (h *WSHub) Set(username string, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+
 	h.conns[username] = conn
 }
 
 func (h *WSHub) Remove(username string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+
 	if c, ok := h.conns[username]; ok {
 		_ = c.Close()
 		delete(h.conns, username)
@@ -39,11 +41,14 @@ func (h *WSHub) Remove(username string) {
 }
 
 func (h *WSHub) Send(username string, payload any) error {
+
 	h.mu.RLock()
 	conn, ok := h.conns[username]
 	h.mu.RUnlock()
+
 	if !ok {
 		return nil
 	}
+
 	return conn.WriteJSON(payload)
 }

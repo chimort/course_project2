@@ -2,8 +2,9 @@ package chat
 
 import (
 	"context"
+	"strconv"
 
-	"github.com/chimort/course_project2/api/proto/chatpb"
+	chatpb "github.com/chimort/course_project2/api/proto/chatpb"
 )
 
 type ChatServer struct {
@@ -12,9 +13,7 @@ type ChatServer struct {
 }
 
 func NewChatServer(service *ChatService) *ChatServer {
-	return &ChatServer{
-		service: service,
-	}
+	return &ChatServer{service: service}
 }
 
 func (s *ChatServer) CreateChat(
@@ -22,17 +21,61 @@ func (s *ChatServer) CreateChat(
 	req *chatpb.CreateChatRequest,
 ) (*chatpb.CreateChatResponse, error) {
 
-	if req.User1 == "" || req.User2 == "" {
-		return &chatpb.CreateChatResponse{Ok: false}, nil
-	}
+	chat, err := s.service.CreateChat(
+		ctx,
+		req.User1,
+		req.User2,
+	)
 
-	chat, err := s.service.CreateChat(ctx, req.User1, req.User2)
 	if err != nil {
 		return nil, err
 	}
 
 	return &chatpb.CreateChatResponse{
-		Ok:     true,
 		ChatId: chat.ID,
+	}, nil
+}
+
+func (s *ChatServer) SendMessage(
+	ctx context.Context,
+	req *chatpb.SendMessageRequest,
+) (*chatpb.SendMessageResponse, error) {
+
+	chatID, _ := strconv.Atoi(req.ChatId)
+
+	err := s.service.SendMessage(
+		ctx,
+		chatID,
+		req.Sender,
+		req.Content,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &chatpb.SendMessageResponse{
+		Ok: true,
+	}, nil
+}
+
+func (s *ChatServer) GetParticipants(
+	ctx context.Context,
+	req *chatpb.GetParticipantsRequest,
+) (*chatpb.GetParticipantsResponse, error) {
+
+	chatID, _ := strconv.Atoi(req.ChatId)
+
+	users, err := s.service.GetParticipants(
+		ctx,
+		chatID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &chatpb.GetParticipantsResponse{
+		Usernames: users,
 	}, nil
 }

@@ -36,8 +36,8 @@ func main() {
 	}
 
 	if err := matchingpb.RegisterMatchingServiceHandlerFromEndpoint(ctx, mux, "matching-service:50053", opts); err != nil {
-    	log.Error("failed to register matching gateway", "error", err)
-    	return
+		log.Error("failed to register matching gateway", "error", err)
+		return
 	}
 
 	if err := chatpb.RegisterChatServiceHandlerFromEndpoint(ctx, mux, "chat-service:50054", opts); err != nil {
@@ -45,13 +45,21 @@ func main() {
 		return
 	}
 
+	// Create gRPC client for chat service
+	chatConn, err := grpc.Dial("chat-service:50054", opts...)
+	if err != nil {
+		log.Error("failed to connect to chat service", "error", err)
+		return
+	}
+	chatClient := chatpb.NewChatServiceClient(chatConn)
+
 	e := echo.New()
 	e.HideBanner = true
 	e.File("/", "web/static/html/index.html")
 	e.Static("/static", "web/static")
 
 	hub := gateway.NewWSHub()
-	wsHandler := handlers.NewWSHandler(hub, log)
+	wsHandler := handlers.NewWSHandler(hub, log, chatClient)
 
 	e.GET("/ws", wsHandler.HandleWS)
 

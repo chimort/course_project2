@@ -1,18 +1,22 @@
 package handlers
 
 import (
+	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 
+	"github.com/chimort/course_project2/api/proto/chatpb"
 	gw "github.com/chimort/course_project2/iternal/gateway/websocket"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
 
 type WSHandler struct {
-	hub      *gw.WSHub
-	log      *slog.Logger
-	upgrader websocket.Upgrader
+	hub        *gw.WSHub
+	log        *slog.Logger
+	upgrader   websocket.Upgrader
+	chatClient chatpb.ChatServiceClient
 }
 
 type NotifyMatchRequest struct {
@@ -21,13 +25,20 @@ type NotifyMatchRequest struct {
 	ChatID string `json:"chat_id"`
 }
 
-func NewWSHandler(hub *gw.WSHub, log *slog.Logger) *WSHandler {
+type ChatMessage struct {
+	Type   string `json:"type"`
+	ChatID string `json:"chat_id"`
+	Text   string `json:"text"`
+}
+
+func NewWSHandler(hub *gw.WSHub, log *slog.Logger, chatClient chatpb.ChatServiceClient) *WSHandler {
 	return &WSHandler{
 		hub: hub,
 		log: log.With("component", "ws_handler"),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool { return true },
 		},
+		chatClient: chatClient,
 	}
 }
 
@@ -51,14 +62,60 @@ func (h *WSHandler) HandleWS(c echo.Context) error {
 		h.log.Info("ws client disconnected", "username", username)
 	}()
 
-	// Пока просто держим соединение живым.
 	for {
-		if _, _, err := conn.ReadMessage(); err != nil {
+		_, data, err := conn.ReadMessage()
+		if err != nil {
 			break
+		}
+
+		var msg ChatMessage
+		if err := json.Unmarshal(data, &msg); err != nil {
+			h.log.Error("failed to parse ws message", "error", err, "data", string(data))
+			continue
+		}
+
+		if msg.Type == "chat_message" {
+			h.handleChatMessage(username, &msg)
 		}
 	}
 
 	return nil
+}
+
+func (h *WSHandler) handleChatMessage(sender string, msg *ChatMessage) {
+	// Send message via gRPC
+	_, err := h.chatClient.SendMessage(context.Background(), &chatpb.SendMessageRequest{
+		ChatId:  msg.ChatID,
+		Sender:  sender,
+		Content: msg.Text,
+	})
+	if err != nil {
+		h.log.Error("failed to send message", "error", err)
+		return
+	}
+
+	// Get participants
+	participants, err := h.chatClient.GetParticipants(context.Background(), &chatpb.GetParticipantsRequest{
+		ChatId: msg.ChatID,
+	})
+	if err != nil {
+		h.log.Error("failed to get participants", "error", err)
+		return
+	}
+
+	// Send to other participants
+	for _, participant := range participants.Usernames {
+		if participant != sender {
+			_ = h.hub.Send(participant, map[string]interface{}{
+				"type":    "chat_message",
+				"from":    sender,
+				"text":    msg.Text,
+				"chat_id": msg.ChatID,
+			})
+		}
+	}
+
+	h.log.Info("chat message sent", "sender", sender, "chat_id", msg.ChatID)
 }
 
 func (h *WSHandler) NotifyMatchFound(c echo.Context) error {
