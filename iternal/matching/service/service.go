@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"math/rand"
 	"net/http"
@@ -260,6 +261,10 @@ func interestTopicForMode(mode matchingpb.MatchMode) string {
 	}
 }
 
+func buildFastChatID(user1, user2 string) string {
+	return fmt.Sprintf("fast-%d-%s-%s", time.Now().UnixNano(), user1, user2)
+}
+
 // FindBestMatch - core algorithm
 // returns MatchingResult or nil if none found
 func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mode matchingpb.MatchMode) (*MatchingResult, error) {
@@ -365,6 +370,8 @@ func (s *MatchingService) findBestMatchWithSeen(
 			prefs = Preferences{WeightLanguage: 0.5, WeightAge: 0.4, WeightHobbies: 0.1}
 			prefs.HobbyTopic = topic
 			prefs.HobbyTopicBoost = 0.35
+		case matchingpb.MatchMode_MATCH_MODE_FAST:
+			prefs = Preferences{WeightLanguage: 0.75, WeightHobbies: 0.05, WeightAge: 0.25, AgeTolerance: 6}
 		default:
 			prefs = Preferences{}
 		}
@@ -411,6 +418,21 @@ func (s *MatchingService) findBestMatchWithSeen(
 
 		reason := "best match: " + reasonKey
 		common := intersect(me.Hobbies, profiles[chosen].Hobbies)
+		if mode == matchingpb.MatchMode_MATCH_MODE_FAST {
+			reasonKey = "fast_chat"
+			reason = "best match: fast_chat"
+		}
+		if mode == matchingpb.MatchMode_MATCH_MODE_DEFAULT ||
+			mode == matchingpb.MatchMode_MATCH_MODE_INTEREST ||
+			(mode == matchingpb.MatchMode_MATCH_MODE_LANGUAGE &&
+				languageMode == matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE) {
+			if len(common) > 0 {
+				reasonKey = strings.ToLower(strings.TrimSpace(common[0]))
+			} else if bd.RawAge >= 0.96 {
+				reasonKey = "similar_age"
+			}
+			reason = "best match: " + reasonKey
+		}
 		tags := make([]string, 0, 3)
 		tags = append(tags, reasonKey)
 		for _, c := range common {
@@ -420,10 +442,16 @@ func (s *MatchingService) findBestMatchWithSeen(
 			tags = append(tags, strings.ToLower(strings.TrimSpace(c)))
 		}
 		matchHint := tags[rand.Intn(len(tags))]
+		if mode == matchingpb.MatchMode_MATCH_MODE_FAST {
+			matchHint = ""
+		}
 
 		removeFromQueue(username, chosen)
 
-		if s.chatClient != nil {
+		if mode == matchingpb.MatchMode_MATCH_MODE_FAST {
+			fastChatID := buildFastChatID(username, chosen)
+			s.notifyMatchFound(username, chosen, fastChatID, "", true)
+		} else if s.chatClient != nil {
 			resp, err := s.chatClient.CreateChat(ctx, &chatpb.CreateChatRequest{
 				User1: username,
 				User2: chosen,
@@ -448,7 +476,7 @@ func (s *MatchingService) findBestMatchWithSeen(
 					"user1", username,
 					"user2", chosen,
 				)
-				s.notifyMatchFound(username, chosen, resp.ChatId, matchHint)
+				s.notifyMatchFound(username, chosen, resp.ChatId, matchHint, false)
 			}
 		}
 
@@ -562,6 +590,8 @@ func (s *MatchingService) getUserMode(ctx context.Context, username string) (mat
 		return matchingpb.MatchMode_MATCH_MODE_DISCUSS_BOOKS, nil
 	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_SPORT.String():
 		return matchingpb.MatchMode_MATCH_MODE_DISCUSS_SPORT, nil
+	case matchingpb.MatchMode_MATCH_MODE_FAST.String():
+		return matchingpb.MatchMode_MATCH_MODE_FAST, nil
 	default:
 		return matchingpb.MatchMode_MATCH_MODE_DEFAULT, nil
 	}
@@ -590,16 +620,17 @@ func (s *MatchingService) getUserLanguageMode(ctx context.Context, username stri
 	}
 }
 
-func (s *MatchingService) notifyMatchFound(user1, user2, chatID, matchHint string) {
+func (s *MatchingService) notifyMatchFound(user1, user2, chatID, matchHint string, fastChat bool) {
 	if s.notifyURL == "" {
 		return
 	}
 
-	body, err := json.Marshal(map[string]string{
+	body, err := json.Marshal(map[string]interface{}{
 		"user1":      user1,
 		"user2":      user2,
 		"chat_id":    chatID,
 		"match_hint": matchHint,
+		"fast_chat":  fastChat,
 	})
 	if err != nil {
 		s.log.Error("failed to marshal notify payload", "error", err)
@@ -625,5 +656,5 @@ func (s *MatchingService) notifyMatchFound(user1, user2, chatID, matchHint strin
 		return
 	}
 
-	s.log.Info("gateway notified about match", "user1", user1, "user2", user2, "chat_id", chatID, "match_hint", matchHint)
+	s.log.Info("gateway notified about match", "user1", user1, "user2", user2, "chat_id", chatID, "match_hint", matchHint, "fast_chat", fastChat)
 }

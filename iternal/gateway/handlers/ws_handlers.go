@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/chimort/course_project2/api/proto/chatpb"
 	gw "github.com/chimort/course_project2/iternal/gateway/websocket"
@@ -17,6 +19,8 @@ type WSHandler struct {
 	log        *slog.Logger
 	upgrader   websocket.Upgrader
 	chatClient chatpb.ChatServiceClient
+	fastChats  map[string]fastChatSession
+	fastMu     sync.RWMutex
 }
 
 type NotifyMatchRequest struct {
@@ -24,12 +28,19 @@ type NotifyMatchRequest struct {
 	User2     string `json:"user2"`
 	ChatID    string `json:"chat_id"`
 	MatchHint string `json:"match_hint"`
+	FastChat  bool   `json:"fast_chat"`
 }
 
 type ChatMessage struct {
 	Type   string `json:"type"`
 	ChatID string `json:"chat_id"`
 	Text   string `json:"text"`
+}
+
+type fastChatSession struct {
+	User1     string
+	User2     string
+	CreatedAt time.Time
 }
 
 func NewWSHandler(hub *gw.WSHub, log *slog.Logger, chatClient chatpb.ChatServiceClient) *WSHandler {
@@ -40,6 +51,7 @@ func NewWSHandler(hub *gw.WSHub, log *slog.Logger, chatClient chatpb.ChatService
 			CheckOrigin: func(r *http.Request) bool { return true },
 		},
 		chatClient: chatClient,
+		fastChats:  make(map[string]fastChatSession),
 	}
 }
 
@@ -84,6 +96,23 @@ func (h *WSHandler) HandleWS(c echo.Context) error {
 }
 
 func (h *WSHandler) handleChatMessage(sender string, msg *ChatMessage) {
+	if participants, ok := h.getFastChatParticipants(msg.ChatID); ok {
+		for _, participant := range participants {
+			if participant != sender {
+				_ = h.hub.Send(participant, map[string]interface{}{
+					"type":      "chat_message",
+					"from":      sender,
+					"text":      msg.Text,
+					"chat_id":   msg.ChatID,
+					"fast_chat": true,
+				})
+			}
+		}
+
+		h.log.Info("fast chat message relayed", "sender", sender, "chat_id", msg.ChatID)
+		return
+	}
+
 	// Send message via gRPC
 	_, err := h.chatClient.SendMessage(context.Background(), &chatpb.SendMessageRequest{
 		ChatId:  msg.ChatID,
@@ -129,20 +158,55 @@ func (h *WSHandler) NotifyMatchFound(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "missing fields"})
 	}
 
-	_ = h.hub.Send(req.User1, map[string]string{
+	if req.FastChat {
+		h.registerFastChat(req.ChatID, req.User1, req.User2)
+	}
+
+	_ = h.hub.Send(req.User1, map[string]interface{}{
 		"type":       "match_found",
 		"chat_id":    req.ChatID,
 		"partner":    req.User2,
 		"match_hint": req.MatchHint,
+		"fast_chat":  req.FastChat,
 	})
 
-	_ = h.hub.Send(req.User2, map[string]string{
+	_ = h.hub.Send(req.User2, map[string]interface{}{
 		"type":       "match_found",
 		"chat_id":    req.ChatID,
 		"partner":    req.User1,
 		"match_hint": req.MatchHint,
+		"fast_chat":  req.FastChat,
 	})
 
-	h.log.Info("match event sent", "user1", req.User1, "user2", req.User2, "chat_id", req.ChatID)
+	h.log.Info("match event sent", "user1", req.User1, "user2", req.User2, "chat_id", req.ChatID, "fast_chat", req.FastChat)
 	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (h *WSHandler) registerFastChat(chatID, user1, user2 string) {
+	h.fastMu.Lock()
+	defer h.fastMu.Unlock()
+
+	h.fastChats[chatID] = fastChatSession{
+		User1:     user1,
+		User2:     user2,
+		CreatedAt: time.Now(),
+	}
+}
+
+func (h *WSHandler) getFastChatParticipants(chatID string) ([]string, bool) {
+	h.fastMu.RLock()
+	session, ok := h.fastChats[chatID]
+	h.fastMu.RUnlock()
+	if !ok {
+		return nil, false
+	}
+
+	if time.Since(session.CreatedAt) > 12*time.Hour {
+		h.fastMu.Lock()
+		delete(h.fastChats, chatID)
+		h.fastMu.Unlock()
+		return nil, false
+	}
+
+	return []string{session.User1, session.User2}, true
 }

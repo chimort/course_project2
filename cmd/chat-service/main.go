@@ -9,6 +9,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/chimort/course_project2/api/proto/chatpb"
+	"github.com/chimort/course_project2/iternal/chat/repository"
 	chat "github.com/chimort/course_project2/iternal/chat/service"
 	"github.com/chimort/course_project2/iternal/pkg/logger"
 	"google.golang.org/grpc"
@@ -24,7 +25,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	chatService := chat.NewChatService(logg, db)
+	chatRepo := repository.NewChatRepository(db)
+	chatService := chat.NewChatService(chatRepo, logg)
 	chatServer := chat.NewChatServer(chatService)
 
 	lis, err := net.Listen("tcp", ":50054")

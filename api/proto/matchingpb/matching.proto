@@ -37,6 +37,7 @@ enum MatchMode {
   MATCH_MODE_DISCUSS_MUSIC = 5;
   MATCH_MODE_DISCUSS_BOOKS = 6;
   MATCH_MODE_DISCUSS_SPORT = 7;
+  MATCH_MODE_FAST = 8;
 }
 
 enum LanguageMatchMode {

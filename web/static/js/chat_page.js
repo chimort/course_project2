@@ -4,6 +4,7 @@
   let chatId = null;
   let peer = null;
   let matchHint = '';
+  let fastChat = false;
   let didSendFirstMessage = false;
   let startersConfig = null;
 
@@ -31,9 +32,11 @@
 
     nameEl.textContent = peer || 'No chat';
     avaEl.textContent = peer ? peer.charAt(0).toUpperCase() : '?';
-    subEl.textContent = chatId ? ('Chat #' + chatId) : 'No chat_id';
+    subEl.textContent = fastChat ? 'Fast one-time chat' : (chatId ? ('Chat #' + chatId) : 'No chat_id');
 
-    if (matchHint) {
+    if (fastChat) {
+      hintEl.textContent = 'Fast one-time chat. It is not saved.';
+    } else if (matchHint) {
       hintEl.textContent = 'You are most similar by: ' + toHintLabel(matchHint);
     } else {
       hintEl.textContent = '';
@@ -57,6 +60,8 @@
   }
 
   async function persistMessageHttp(text) {
+    if (fastChat) return false;
+
     const username = getStoredUsername();
     if (!chatId || !username || !text) return false;
 
@@ -86,7 +91,7 @@
   }
 
   async function loadMessageHistory() {
-    if (!chatId) return;
+    if (!chatId || fastChat) return;
 
     try {
       const r = await fetch(`/v1/chat/${encodeURIComponent(chatId)}/messages?limit=100`, {
@@ -120,6 +125,8 @@
   }
 
   async function markChatAsRead() {
+    if (fastChat) return;
+
     const username = getStoredUsername();
     if (!chatId || !username) return;
 
@@ -268,6 +275,7 @@
     chatId = qs('chat_id');
     peer = qs('peer');
     matchHint = qs('match_hint') || '';
+    fastChat = qs('fast_chat') === '1';
 
     const username = getStoredUsername();
     if (!username) {
@@ -280,12 +288,19 @@
     window.AppChat = { handleWsEvent };
 
     try {
-      localStorage.setItem('lastChat', JSON.stringify({ chat_id: chatId, partner: peer, match_hint: matchHint }));
+      localStorage.setItem('lastChat', JSON.stringify({
+        chat_id: chatId,
+        partner: peer,
+        match_hint: matchHint,
+        fast_chat: fastChat
+      }));
     } catch (_) {}
 
     setPeerUI();
-    await loadMessageHistory();
-    await markChatAsRead();
+    if (!fastChat) {
+      await loadMessageHistory();
+      await markChatAsRead();
+    }
     await showStartersIfNeeded();
 
     document.getElementById('chat-send').onclick = sendMessage;

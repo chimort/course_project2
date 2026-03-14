@@ -250,6 +250,9 @@ func TestFindBestMatch_DefaultComplex(t *testing.T) {
 	if res == nil {
 		t.Fatalf("expected match")
 	}
+	if res.Reason != "best match: travel" {
+		t.Fatalf("expected travel to be preferred over language, got %q", res.Reason)
+	}
 }
 
 func TestFindBestMatch_DiscussMusic_Basic(t *testing.T) {
@@ -282,5 +285,38 @@ func TestFindBestMatch_DiscussMusic_Basic(t *testing.T) {
 	}
 	if res.Reason != "best match: music" {
 		t.Fatalf("expected 'best match: music', got %q", res.Reason)
+	}
+}
+
+func TestFindBestMatch_Fast_Basic(t *testing.T) {
+	svc, rdb, ctx := setupService(t)
+	_ = rdb.FlushDB(ctx).Err()
+
+	users := []string{"me", "near", "far"}
+	for _, u := range users {
+		_, _ = svc.JoinQueue(ctx, &matchingpb.JoinQueueRequest{
+			Username: u,
+			Mode:     matchingpb.MatchMode_MATCH_MODE_FAST,
+		})
+		time.Sleep(1 * time.Millisecond)
+	}
+
+	svc.SetFetchFunc(func(ctx context.Context, usernames []string) (map[string]UserProfile, error) {
+		return map[string]UserProfile{
+			"me":   {ID: "me", Age: 24, Hobbies: []string{"books"}, Languages: []LanguageSkill{{Name: "English", Level: "NATIVE"}}},
+			"near": {ID: "near", Age: 27, Hobbies: []string{"sport"}, Languages: []LanguageSkill{{Name: "English", Level: "MEDIUM"}}},
+			"far":  {ID: "far", Age: 41, Hobbies: []string{"music"}, Languages: []LanguageSkill{{Name: "English", Level: "MEDIUM"}}},
+		}, nil
+	})
+
+	res, err := svc.FindBestMatch(ctx, "me", matchingpb.MatchMode_MATCH_MODE_FAST)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if res == nil || res.Username != "near" {
+		t.Fatalf("expected near, got %+v", res)
+	}
+	if res.Reason != "best match: fast_chat" {
+		t.Fatalf("expected fast_chat reason, got %q", res.Reason)
 	}
 }

@@ -33,6 +33,7 @@ const (
 	MatchMode_MATCH_MODE_DISCUSS_MUSIC MatchMode = 5
 	MatchMode_MATCH_MODE_DISCUSS_BOOKS MatchMode = 6
 	MatchMode_MATCH_MODE_DISCUSS_SPORT MatchMode = 7
+	MatchMode_MATCH_MODE_FAST          MatchMode = 8
 )
 
 // Enum value maps for MatchMode.
@@ -46,6 +47,7 @@ var (
 		5: "MATCH_MODE_DISCUSS_MUSIC",
 		6: "MATCH_MODE_DISCUSS_BOOKS",
 		7: "MATCH_MODE_DISCUSS_SPORT",
+		8: "MATCH_MODE_FAST",
 	}
 	MatchMode_value = map[string]int32{
 		"MATCH_MODE_UNSPECIFIED":   0,
@@ -56,6 +58,7 @@ var (
 		"MATCH_MODE_DISCUSS_MUSIC": 5,
 		"MATCH_MODE_DISCUSS_BOOKS": 6,
 		"MATCH_MODE_DISCUSS_SPORT": 7,
+		"MATCH_MODE_FAST":          8,
 	}
 )
 
@@ -425,7 +428,7 @@ const file_matchingpb_matching_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x12\n" +
 	"\x10ListQueueRequest\"1\n" +
 	"\x11ListQueueResponse\x12\x1c\n" +
-	"\tusernames\x18\x01 \x03(\tR\tusernames*\xe9\x01\n" +
+	"\tusernames\x18\x01 \x03(\tR\tusernames*\xfe\x01\n" +
 	"\tMatchMode\x12\x1a\n" +
 	"\x16MATCH_MODE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12MATCH_MODE_DEFAULT\x10\x01\x12\x17\n" +
@@ -434,7 +437,8 @@ const file_matchingpb_matching_proto_rawDesc = "" +
 	"\x18MATCH_MODE_DISCUSS_MOVIE\x10\x04\x12\x1c\n" +
 	"\x18MATCH_MODE_DISCUSS_MUSIC\x10\x05\x12\x1c\n" +
 	"\x18MATCH_MODE_DISCUSS_BOOKS\x10\x06\x12\x1c\n" +
-	"\x18MATCH_MODE_DISCUSS_SPORT\x10\a*\x87\x01\n" +
+	"\x18MATCH_MODE_DISCUSS_SPORT\x10\a\x12\x13\n" +
+	"\x0fMATCH_MODE_FAST\x10\b*\x87\x01\n" +
 	"\x11LanguageMatchMode\x12#\n" +
 	"\x1fLANGUAGE_MATCH_MODE_UNSPECIFIED\x10\x00\x12%\n" +
 	"!LANGUAGE_MATCH_MODE_SAME_LANGUAGE\x10\x01\x12&\n" +

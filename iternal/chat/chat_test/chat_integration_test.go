@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/chimort/course_project2/iternal/chat/repository"
 	chat "github.com/chimort/course_project2/iternal/chat/service"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
@@ -47,7 +48,8 @@ func TestChatFullFlow(t *testing.T) {
 	defer db.Close()
 
 	logg := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	svc := chat.NewChatService(logg, db)
+	repo := repository.NewChatRepository(db)
+	svc := chat.NewChatService(repo, logg)
 	insertTestUsers(t, db)
 
 	ctx := context.Background()

@@ -85,13 +85,18 @@ function startQueuePolling(username) {
   queuePollTimer = setInterval(() => refreshQueueState(username), 3000);
 }
 
-function redirectToChat(chatId, partner, matchHint = '') {
+function redirectToChat(chatId, partner, matchHint = '', fastChat = false) {
   // Save last chat for "history button" in profile (stub)
   try {
-    localStorage.setItem('lastChat', JSON.stringify({ chat_id: chatId, partner: partner, match_hint: matchHint }));
+    localStorage.setItem('lastChat', JSON.stringify({
+      chat_id: chatId,
+      partner: partner,
+      match_hint: matchHint,
+      fast_chat: fastChat
+    }));
   } catch (_) {}
 
-  const url = `/static/html/chat.html?chat_id=${encodeURIComponent(chatId)}&peer=${encodeURIComponent(partner)}&match_hint=${encodeURIComponent(matchHint)}`;
+  const url = `/static/html/chat.html?chat_id=${encodeURIComponent(chatId)}&peer=${encodeURIComponent(partner)}&match_hint=${encodeURIComponent(matchHint)}&fast_chat=${fastChat ? '1' : '0'}`;
   window.location.href = url;
 }
 
@@ -104,8 +109,9 @@ function handleWsEvent(msg) {
     const chatId = msg.chat_id || msg.chatId;
     const partner = msg.partner || msg.peer || msg.username;
     const matchHint = msg.match_hint || msg.matchHint || '';
+    const fastChat = !!(msg.fast_chat || msg.fastChat);
     if (chatId && partner) {
-      redirectToChat(chatId, partner, matchHint);
+      redirectToChat(chatId, partner, matchHint, fastChat);
       return;
     }
     console.log('[MATCH] match_found but missing fields:', msg);
