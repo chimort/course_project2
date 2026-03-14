@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/chimort/course_project2/api/proto/chatpb"
@@ -40,16 +41,27 @@ type MatchingService struct {
 
 	// for tests: ability to override profile fetcher
 	fetchFunc func(ctx context.Context, usernames []string) (map[string]UserProfile, error)
+
+	cacheMu      sync.RWMutex
+	profileCache map[string]cachedProfile
+	cacheTTL     time.Duration
 }
 
-func NewMatchingService(r *redis.Client, userClient userpb.UserServiceClient, 
-		chatClient chatpb.ChatServiceClient, log *slog.Logger) *MatchingService {
+type cachedProfile struct {
+	profile UserProfile
+	expires time.Time
+}
+
+func NewMatchingService(r *redis.Client, userClient userpb.UserServiceClient,
+	chatClient chatpb.ChatServiceClient, log *slog.Logger) *MatchingService {
 	return &MatchingService{
-		redis:      r,
-		userClient: userClient,
-		chatClient: chatClient,
-		log:        log.With("service", "matching_service"),
-		notifyURL: "http://gateway:8080/iternal/ws/match-found",
+		redis:        r,
+		userClient:   userClient,
+		chatClient:   chatClient,
+		log:          log.With("service", "matching_service"),
+		notifyURL:    "http://gateway:8080/iternal/ws/match-found",
+		profileCache: make(map[string]cachedProfile),
+		cacheTTL:     3 * time.Second,
 	}
 }
 
@@ -139,6 +151,11 @@ func (s *MatchingService) fetchProfiles(ctx context.Context, usernames []string)
 
 	out := make(map[string]UserProfile, len(usernames))
 	for _, uname := range usernames {
+		if p, ok := s.getCachedProfile(uname); ok {
+			out[uname] = p
+			continue
+		}
+
 		iternalCtx := metadata.AppendToOutgoingContext(ctx, "iternal", "true")
 		resp, err := s.userClient.GetUserForMatching(iternalCtx, &userpb.GetUserRequest{Username: uname})
 		if err != nil {
@@ -154,11 +171,40 @@ func (s *MatchingService) fetchProfiles(ctx context.Context, usernames []string)
 		for _, it := range u.Interests {
 			h = append(h, it.Name)
 		}
-		out[uname] = UserProfile{ID: u.Username, Age: int(u.Age), Hobbies: h, Language: lang}
+		p := UserProfile{ID: u.Username, Age: int(u.Age), Hobbies: h, Language: lang}
+		out[uname] = p
+		s.setCachedProfile(uname, p)
 		// tiny throttle
 		time.Sleep(5 * time.Millisecond)
 	}
 	return out, nil
+}
+
+func (s *MatchingService) getCachedProfile(username string) (UserProfile, bool) {
+	s.cacheMu.RLock()
+	item, ok := s.profileCache[username]
+	s.cacheMu.RUnlock()
+	if !ok {
+		return UserProfile{}, false
+	}
+
+	if time.Now().After(item.expires) {
+		s.cacheMu.Lock()
+		delete(s.profileCache, username)
+		s.cacheMu.Unlock()
+		return UserProfile{}, false
+	}
+
+	return item.profile, true
+}
+
+func (s *MatchingService) setCachedProfile(username string, profile UserProfile) {
+	s.cacheMu.Lock()
+	s.profileCache[username] = cachedProfile{
+		profile: profile,
+		expires: time.Now().Add(s.cacheTTL),
+	}
+	s.cacheMu.Unlock()
 }
 
 // helper: intersect of hobbies (max 2 returned)
@@ -191,6 +237,22 @@ func hasMovie(p UserProfile) bool {
 // FindBestMatch - core algorithm
 // returns MatchingResult or nil if none found
 func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mode matchingpb.MatchMode) (*MatchingResult, error) {
+	return s.findBestMatchWithSeen(ctx, username, mode, nil)
+}
+
+func pairKey(a, b string) string {
+	if a < b {
+		return a + "|" + b
+	}
+	return b + "|" + a
+}
+
+func (s *MatchingService) findBestMatchWithSeen(
+	ctx context.Context,
+	username string,
+	mode matchingpb.MatchMode,
+	seenPairs map[string]struct{},
+) (*MatchingResult, error) {
 	all, err := s.fetchQueueUsernames(ctx, 200)
 	if err != nil {
 		return nil, err
@@ -226,7 +288,7 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 
 	baseThreshold := 0.8
 	minThreshold := 0.4
-	decPerMin := 0.05
+	decPerMin := 0.06
 
 	threshold := baseThreshold - (waitSec/60.0)*decPerMin
 	if threshold < minThreshold {
@@ -243,6 +305,14 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 	var allScores []candidateScore
 
 	for _, c := range candidates {
+		if seenPairs != nil {
+			key := pairKey(username, c)
+			if _, ok := seenPairs[key]; ok {
+				continue
+			}
+			seenPairs[key] = struct{}{}
+		}
+
 		p, ok := profiles[c]
 		if !ok {
 			continue
@@ -300,29 +370,47 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 
 		reason := "best match: " + reasonKey
 		common := intersect(me.Hobbies, profiles[chosen].Hobbies)
+		tags := make([]string, 0, 3)
+		tags = append(tags, reasonKey)
+		for _, c := range common {
+			if len(tags) >= 3 {
+				break
+			}
+			tags = append(tags, strings.ToLower(strings.TrimSpace(c)))
+		}
+		matchHint := tags[rand.Intn(len(tags))]
 
 		removeFromQueue(username, chosen)
 
 		if s.chatClient != nil {
-		resp, err := s.chatClient.CreateChat(ctx, &chatpb.CreateChatRequest{
-			User1: username,
-			User2: chosen,
-		})
-		if err != nil {
-			s.log.Error("failed to create chat",
-				"user1", username,
-				"user2", chosen,
-				"error", err,
-			)
-		} else {
-			s.log.Info("chat created via chat-service",
-				"chat_id", resp.ChatId,
-				"user1", username,
-				"user2", chosen,
-			)
-			s.notifyMatchFound(username, chosen, resp.ChatId)
+			resp, err := s.chatClient.CreateChat(ctx, &chatpb.CreateChatRequest{
+				User1: username,
+				User2: chosen,
+			})
+			if err != nil {
+				s.log.Error("failed to create chat",
+					"user1", username,
+					"user2", chosen,
+					"error", err,
+				)
+			} else {
+				_, err = s.chatClient.SetChatMatchTags(ctx, &chatpb.SetChatMatchTagsRequest{
+					ChatId: resp.ChatId,
+					Tags:   tags,
+				})
+				if err != nil {
+					s.log.Warn("failed to set chat match tags", "chat_id", resp.ChatId, "error", err)
+				}
+
+				s.log.Info("chat created via chat-service",
+					"chat_id", resp.ChatId,
+					"user1", username,
+					"user2", chosen,
+				)
+				s.notifyMatchFound(username, chosen, resp.ChatId, matchHint)
+			}
 		}
-	}
+
 		return &MatchingResult{
 			Username:        chosen,
 			Reason:          reason,
@@ -365,7 +453,7 @@ func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mo
 }
 
 func (s *MatchingService) StartMatcher(ctx context.Context) {
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(2 * time.Second)
 	s.log.Info("matcher started")
 
 	go func() {
@@ -395,13 +483,15 @@ func (s *MatchingService) runMatchCycle(ctx context.Context) {
 		return
 	}
 
+	seenPairs := make(map[string]struct{}, len(users))
+
 	for _, username := range users {
 		mode, err := s.getUserMode(ctx, username)
 		if err != nil {
 			continue
 		}
 
-		_, err = s.FindBestMatch(ctx, username, mode)
+		_, err = s.findBestMatchWithSeen(ctx, username, mode, seenPairs)
 		if err != nil {
 			s.log.Warn("FindBestMatch failed", "username", username, "error", err)
 		}
@@ -426,15 +516,16 @@ func (s *MatchingService) getUserMode(ctx context.Context, username string) (mat
 	}
 }
 
-func (s *MatchingService) notifyMatchFound(user1, user2, chatID string) {
+func (s *MatchingService) notifyMatchFound(user1, user2, chatID, matchHint string) {
 	if s.notifyURL == "" {
 		return
 	}
 
 	body, err := json.Marshal(map[string]string{
-		"user1":   user1,
-		"user2":   user2,
-		"chat_id": chatID,
+		"user1":      user1,
+		"user2":      user2,
+		"chat_id":    chatID,
+		"match_hint": matchHint,
 	})
 	if err != nil {
 		s.log.Error("failed to marshal notify payload", "error", err)
@@ -460,5 +551,5 @@ func (s *MatchingService) notifyMatchFound(user1, user2, chatID string) {
 		return
 	}
 
-	s.log.Info("gateway notified about match", "user1", user1, "user2", user2, "chat_id", chatID)
+	s.log.Info("gateway notified about match", "user1", user1, "user2", user2, "chat_id", chatID, "match_hint", matchHint)
 }

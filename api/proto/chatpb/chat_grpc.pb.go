@@ -19,11 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ChatService_CreateChat_FullMethodName      = "/chatpb.ChatService/CreateChat"
-	ChatService_SendMessage_FullMethodName     = "/chatpb.ChatService/SendMessage"
-	ChatService_GetParticipants_FullMethodName = "/chatpb.ChatService/GetParticipants"
-	ChatService_GetMessages_FullMethodName     = "/chatpb.ChatService/GetMessages"
-	ChatService_GetUserChats_FullMethodName    = "/chatpb.ChatService/GetUserChats"
+	ChatService_CreateChat_FullMethodName       = "/chatpb.ChatService/CreateChat"
+	ChatService_SendMessage_FullMethodName      = "/chatpb.ChatService/SendMessage"
+	ChatService_GetParticipants_FullMethodName  = "/chatpb.ChatService/GetParticipants"
+	ChatService_GetMessages_FullMethodName      = "/chatpb.ChatService/GetMessages"
+	ChatService_GetUserChats_FullMethodName     = "/chatpb.ChatService/GetUserChats"
+	ChatService_MarkChatRead_FullMethodName     = "/chatpb.ChatService/MarkChatRead"
+	ChatService_SetChatMatchTags_FullMethodName = "/chatpb.ChatService/SetChatMatchTags"
 )
 
 // ChatServiceClient is the client API for ChatService service.
@@ -35,6 +37,8 @@ type ChatServiceClient interface {
 	GetParticipants(ctx context.Context, in *GetParticipantsRequest, opts ...grpc.CallOption) (*GetParticipantsResponse, error)
 	GetMessages(ctx context.Context, in *GetMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error)
 	GetUserChats(ctx context.Context, in *GetUserChatsRequest, opts ...grpc.CallOption) (*GetUserChatsResponse, error)
+	MarkChatRead(ctx context.Context, in *MarkChatReadRequest, opts ...grpc.CallOption) (*MarkChatReadResponse, error)
+	SetChatMatchTags(ctx context.Context, in *SetChatMatchTagsRequest, opts ...grpc.CallOption) (*SetChatMatchTagsResponse, error)
 }
 
 type chatServiceClient struct {
@@ -95,6 +99,26 @@ func (c *chatServiceClient) GetUserChats(ctx context.Context, in *GetUserChatsRe
 	return out, nil
 }
 
+func (c *chatServiceClient) MarkChatRead(ctx context.Context, in *MarkChatReadRequest, opts ...grpc.CallOption) (*MarkChatReadResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarkChatReadResponse)
+	err := c.cc.Invoke(ctx, ChatService_MarkChatRead_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) SetChatMatchTags(ctx context.Context, in *SetChatMatchTagsRequest, opts ...grpc.CallOption) (*SetChatMatchTagsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetChatMatchTagsResponse)
+	err := c.cc.Invoke(ctx, ChatService_SetChatMatchTags_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChatServiceServer is the server API for ChatService service.
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility.
@@ -104,6 +128,8 @@ type ChatServiceServer interface {
 	GetParticipants(context.Context, *GetParticipantsRequest) (*GetParticipantsResponse, error)
 	GetMessages(context.Context, *GetMessagesRequest) (*GetMessagesResponse, error)
 	GetUserChats(context.Context, *GetUserChatsRequest) (*GetUserChatsResponse, error)
+	MarkChatRead(context.Context, *MarkChatReadRequest) (*MarkChatReadResponse, error)
+	SetChatMatchTags(context.Context, *SetChatMatchTagsRequest) (*SetChatMatchTagsResponse, error)
 	mustEmbedUnimplementedChatServiceServer()
 }
 
@@ -128,6 +154,12 @@ func (UnimplementedChatServiceServer) GetMessages(context.Context, *GetMessagesR
 }
 func (UnimplementedChatServiceServer) GetUserChats(context.Context, *GetUserChatsRequest) (*GetUserChatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserChats not implemented")
+}
+func (UnimplementedChatServiceServer) MarkChatRead(context.Context, *MarkChatReadRequest) (*MarkChatReadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MarkChatRead not implemented")
+}
+func (UnimplementedChatServiceServer) SetChatMatchTags(context.Context, *SetChatMatchTagsRequest) (*SetChatMatchTagsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetChatMatchTags not implemented")
 }
 func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
 func (UnimplementedChatServiceServer) testEmbeddedByValue()                     {}
@@ -240,6 +272,42 @@ func _ChatService_GetUserChats_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChatService_MarkChatRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkChatReadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).MarkChatRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_MarkChatRead_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).MarkChatRead(ctx, req.(*MarkChatReadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_SetChatMatchTags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetChatMatchTagsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).SetChatMatchTags(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_SetChatMatchTags_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).SetChatMatchTags(ctx, req.(*SetChatMatchTagsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +334,14 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserChats",
 			Handler:    _ChatService_GetUserChats_Handler,
+		},
+		{
+			MethodName: "MarkChatRead",
+			Handler:    _ChatService_MarkChatRead_Handler,
+		},
+		{
+			MethodName: "SetChatMatchTags",
+			Handler:    _ChatService_SetChatMatchTags_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

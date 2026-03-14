@@ -88,6 +88,7 @@
   width: 100%;
   text-align: left;
   cursor: pointer;
+  position: relative;
 }
 
 .chat-history-item:hover {
@@ -128,4 +129,13 @@
 .chat-history-empty {
   color: var(--muted);
   padding: 8px 0;
+}
+
+.chat-history-unread {
+  margin-left: auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1d4ed8;
+  flex-shrink: 0;
 }

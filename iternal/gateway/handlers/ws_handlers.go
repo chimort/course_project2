@@ -20,9 +20,10 @@ type WSHandler struct {
 }
 
 type NotifyMatchRequest struct {
-	User1  string `json:"user1"`
-	User2  string `json:"user2"`
-	ChatID string `json:"chat_id"`
+	User1     string `json:"user1"`
+	User2     string `json:"user2"`
+	ChatID    string `json:"chat_id"`
+	MatchHint string `json:"match_hint"`
 }
 
 type ChatMessage struct {
@@ -129,15 +130,17 @@ func (h *WSHandler) NotifyMatchFound(c echo.Context) error {
 	}
 
 	_ = h.hub.Send(req.User1, map[string]string{
-		"type":    "match_found",
-		"chat_id": req.ChatID,
-		"partner": req.User2,
+		"type":       "match_found",
+		"chat_id":    req.ChatID,
+		"partner":    req.User2,
+		"match_hint": req.MatchHint,
 	})
 
 	_ = h.hub.Send(req.User2, map[string]string{
-		"type":    "match_found",
-		"chat_id": req.ChatID,
-		"partner": req.User1,
+		"type":       "match_found",
+		"chat_id":    req.ChatID,
+		"partner":    req.User1,
+		"match_hint": req.MatchHint,
 	})
 
 	h.log.Info("match event sent", "user1", req.User1, "user2", req.User2, "chat_id", req.ChatID)

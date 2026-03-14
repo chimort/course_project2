@@ -85,13 +85,13 @@ function startQueuePolling(username) {
   queuePollTimer = setInterval(() => refreshQueueState(username), 3000);
 }
 
-function redirectToChat(chatId, partner) {
+function redirectToChat(chatId, partner, matchHint = '') {
   // Save last chat for "history button" in profile (stub)
   try {
-    localStorage.setItem('lastChat', JSON.stringify({ chat_id: chatId, partner: partner }));
+    localStorage.setItem('lastChat', JSON.stringify({ chat_id: chatId, partner: partner, match_hint: matchHint }));
   } catch (_) {}
 
-  const url = `/static/html/chat.html?chat_id=${encodeURIComponent(chatId)}&peer=${encodeURIComponent(partner)}`;
+  const url = `/static/html/chat.html?chat_id=${encodeURIComponent(chatId)}&peer=${encodeURIComponent(partner)}&match_hint=${encodeURIComponent(matchHint)}`;
   window.location.href = url;
 }
 
@@ -103,8 +103,9 @@ function handleWsEvent(msg) {
   if (msg.type === 'match_found') {
     const chatId = msg.chat_id || msg.chatId;
     const partner = msg.partner || msg.peer || msg.username;
+    const matchHint = msg.match_hint || msg.matchHint || '';
     if (chatId && partner) {
-      redirectToChat(chatId, partner);
+      redirectToChat(chatId, partner, matchHint);
       return;
     }
     console.log('[MATCH] match_found but missing fields:', msg);

@@ -128,10 +128,38 @@ func (s *ChatServer) GetUserChats(
 			PeerUsername:  chat.PeerUsername,
 			LastMessage:   chat.LastMessage,
 			LastMessageAt: chat.LastMessageAt,
+			HasUnread:     chat.HasUnread,
+			MatchHint:     chat.MatchHint,
 		})
 	}
 
 	return &chatpb.GetUserChatsResponse{
 		Chats: resp,
 	}, nil
+}
+
+func (s *ChatServer) MarkChatRead(
+	ctx context.Context,
+	req *chatpb.MarkChatReadRequest,
+) (*chatpb.MarkChatReadResponse, error) {
+	chatID, _ := strconv.Atoi(req.ChatId)
+
+	if err := s.service.MarkChatRead(ctx, chatID, req.Username); err != nil {
+		return nil, err
+	}
+
+	return &chatpb.MarkChatReadResponse{Ok: true}, nil
+}
+
+func (s *ChatServer) SetChatMatchTags(
+	ctx context.Context,
+	req *chatpb.SetChatMatchTagsRequest,
+) (*chatpb.SetChatMatchTagsResponse, error) {
+	chatID, _ := strconv.Atoi(req.ChatId)
+
+	if err := s.service.SetChatMatchTags(ctx, chatID, req.Tags); err != nil {
+		return nil, err
+	}
+
+	return &chatpb.SetChatMatchTagsResponse{Ok: true}, nil
 }

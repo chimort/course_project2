@@ -39,6 +39,20 @@ service ChatService {
       get: "/v1/chat/history/{username}"
     };
   };
+
+  rpc MarkChatRead(MarkChatReadRequest) returns (MarkChatReadResponse) {
+    option (google.api.http) = {
+      post: "/v1/chat/{chat_id}/read/{username}"
+      body: "*"
+    };
+  };
+
+  rpc SetChatMatchTags(SetChatMatchTagsRequest) returns (SetChatMatchTagsResponse) {
+    option (google.api.http) = {
+      post: "/v1/chat/{chat_id}/match-tags"
+      body: "*"
+    };
+  };
 }
 
 message CreateChatRequest {
@@ -92,8 +106,28 @@ message ChatPreview {
   string peer_username = 2;
   string last_message = 3;
   string last_message_at = 4;
+  bool has_unread = 5;
+  string match_hint = 6;
 }
 
 message GetUserChatsResponse {
   repeated ChatPreview chats = 1;
+}
+
+message MarkChatReadRequest {
+  string chat_id = 1;
+  string username = 2;
+}
+
+message MarkChatReadResponse {
+  bool ok = 1;
+}
+
+message SetChatMatchTagsRequest {
+  string chat_id = 1;
+  repeated string tags = 2;
+}
+
+message SetChatMatchTagsResponse {
+  bool ok = 1;
 }

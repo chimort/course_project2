@@ -78,6 +78,8 @@ function renderChatHistory(chats) {
     const chatId = chat.chatId || chat.chat_id || '';
     const peer = chat.peerUsername || chat.peer_username || 'Unknown';
     const lastMessage = chat.lastMessage || chat.last_message || 'Нет сообщений';
+    const hasUnread = !!(chat.hasUnread || chat.has_unread);
+    const matchHint = chat.matchHint || chat.match_hint || '';
 
     const item = document.createElement('button');
     item.type = 'button';
@@ -103,8 +105,17 @@ function renderChatHistory(chats) {
     item.appendChild(avatar);
     item.appendChild(body);
 
+    if (hasUnread) {
+      const unreadDot = document.createElement('span');
+      unreadDot.className = 'chat-history-unread';
+      unreadDot.setAttribute('aria-label', 'Unread message');
+      item.appendChild(unreadDot);
+    }
+
     item.onclick = () => {
-      const url = '/static/html/chat.html?chat_id=' + encodeURIComponent(chatId) + '&peer=' + encodeURIComponent(peer);
+      const url = '/static/html/chat.html?chat_id=' + encodeURIComponent(chatId)
+        + '&peer=' + encodeURIComponent(peer)
+        + '&match_hint=' + encodeURIComponent(matchHint);
       window.location.href = url;
     };
 

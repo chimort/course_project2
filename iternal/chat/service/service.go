@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+
+	"github.com/lib/pq"
 )
 
 type Chat struct {
@@ -26,6 +28,8 @@ type ChatPreview struct {
 	PeerUsername  string
 	LastMessage   string
 	LastMessageAt string
+	HasUnread     bool
+	MatchHint     string
 }
 
 type ChatService struct {
@@ -224,10 +228,28 @@ func (s *ChatService) GetUserChats(
 					to_char(last_msg.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
 					to_char(ch.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 				) AS last_message_at,
-				row_number() OVER (
-					PARTITION BY COALESCE(peer.username, '')
-					ORDER BY COALESCE(last_msg.created_at, ch.created_at) DESC, cp.chat_id DESC
-				) AS rn
+					EXISTS (
+						SELECT 1
+						FROM messages um
+						WHERE um.chat_id = cp.chat_id
+						  AND um.sender_name <> $1
+						  AND um.created_at > COALESCE(cp.last_read_at, to_timestamp(0))
+					) AS has_unread,
+					COALESCE(
+						(
+							SELECT chh.match_tags[
+								1 + floor(random() * array_length(chh.match_tags, 1))::int
+							]
+							FROM chat_histories chh
+							WHERE chh.chat_id = cp.chat_id
+							  AND array_length(chh.match_tags, 1) > 0
+						),
+						''
+					) AS match_hint,
+					row_number() OVER (
+						PARTITION BY COALESCE(peer.username, '')
+						ORDER BY COALESCE(last_msg.created_at, ch.created_at) DESC, cp.chat_id DESC
+					) AS rn
 			FROM chat_participants cp
 			JOIN chats ch ON ch.id = cp.chat_id
 			LEFT JOIN chat_participants peer
@@ -242,10 +264,10 @@ func (s *ChatService) GetUserChats(
 			) AS last_msg ON true
 			WHERE cp.username = $1
 		)
-		SELECT chat_id, peer_username, last_message, last_message_at
-		FROM raw
-		WHERE rn = 1
-		ORDER BY sort_at DESC, chat_id DESC`,
+			SELECT chat_id, peer_username, last_message, last_message_at, has_unread, match_hint
+			FROM raw
+			WHERE rn = 1
+			ORDER BY sort_at DESC, chat_id DESC`,
 		username,
 	)
 
@@ -264,6 +286,8 @@ func (s *ChatService) GetUserChats(
 			&peerUsername,
 			&chat.LastMessage,
 			&chat.LastMessageAt,
+			&chat.HasUnread,
+			&chat.MatchHint,
 		); err != nil {
 			return nil, err
 		}
@@ -282,4 +306,36 @@ func (s *ChatService) GetUserChats(
 	}
 
 	return chats, nil
+}
+
+func (s *ChatService) MarkChatRead(
+	ctx context.Context,
+	chatID int,
+	username string,
+) error {
+	_, err := s.db.ExecContext(
+		ctx,
+		`UPDATE chat_participants
+		 SET last_read_at = now()
+		 WHERE chat_id = $1 AND username = $2`,
+		chatID,
+		username,
+	)
+	return err
+}
+
+func (s *ChatService) SetChatMatchTags(
+	ctx context.Context,
+	chatID int,
+	tags []string,
+) error {
+	_, err := s.db.ExecContext(
+		ctx,
+		`UPDATE chat_histories
+		 SET match_tags = $2
+		 WHERE chat_id = $1`,
+		chatID,
+		pq.Array(tags),
+	)
+	return err
 }
