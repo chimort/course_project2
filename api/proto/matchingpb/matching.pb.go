@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v3.6.1
-// source: api/proto/matchingpb/matching.proto
+// source: matchingpb/matching.proto
 
 package matchingpb
 
@@ -30,6 +30,9 @@ const (
 	MatchMode_MATCH_MODE_LANGUAGE      MatchMode = 2
 	MatchMode_MATCH_MODE_INTEREST      MatchMode = 3
 	MatchMode_MATCH_MODE_DISCUSS_MOVIE MatchMode = 4
+	MatchMode_MATCH_MODE_DISCUSS_MUSIC MatchMode = 5
+	MatchMode_MATCH_MODE_DISCUSS_BOOKS MatchMode = 6
+	MatchMode_MATCH_MODE_DISCUSS_SPORT MatchMode = 7
 )
 
 // Enum value maps for MatchMode.
@@ -40,6 +43,9 @@ var (
 		2: "MATCH_MODE_LANGUAGE",
 		3: "MATCH_MODE_INTEREST",
 		4: "MATCH_MODE_DISCUSS_MOVIE",
+		5: "MATCH_MODE_DISCUSS_MUSIC",
+		6: "MATCH_MODE_DISCUSS_BOOKS",
+		7: "MATCH_MODE_DISCUSS_SPORT",
 	}
 	MatchMode_value = map[string]int32{
 		"MATCH_MODE_UNSPECIFIED":   0,
@@ -47,6 +53,9 @@ var (
 		"MATCH_MODE_LANGUAGE":      2,
 		"MATCH_MODE_INTEREST":      3,
 		"MATCH_MODE_DISCUSS_MOVIE": 4,
+		"MATCH_MODE_DISCUSS_MUSIC": 5,
+		"MATCH_MODE_DISCUSS_BOOKS": 6,
+		"MATCH_MODE_DISCUSS_SPORT": 7,
 	}
 )
 
@@ -61,11 +70,11 @@ func (x MatchMode) String() string {
 }
 
 func (MatchMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_matchingpb_matching_proto_enumTypes[0].Descriptor()
+	return file_matchingpb_matching_proto_enumTypes[0].Descriptor()
 }
 
 func (MatchMode) Type() protoreflect.EnumType {
-	return &file_api_proto_matchingpb_matching_proto_enumTypes[0]
+	return &file_matchingpb_matching_proto_enumTypes[0]
 }
 
 func (x MatchMode) Number() protoreflect.EnumNumber {
@@ -74,20 +83,70 @@ func (x MatchMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MatchMode.Descriptor instead.
 func (MatchMode) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_matchingpb_matching_proto_rawDescGZIP(), []int{0}
+	return file_matchingpb_matching_proto_rawDescGZIP(), []int{0}
+}
+
+type LanguageMatchMode int32
+
+const (
+	LanguageMatchMode_LANGUAGE_MATCH_MODE_UNSPECIFIED    LanguageMatchMode = 0
+	LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE  LanguageMatchMode = 1
+	LanguageMatchMode_LANGUAGE_MATCH_MODE_LEARNING_GOALS LanguageMatchMode = 2
+)
+
+// Enum value maps for LanguageMatchMode.
+var (
+	LanguageMatchMode_name = map[int32]string{
+		0: "LANGUAGE_MATCH_MODE_UNSPECIFIED",
+		1: "LANGUAGE_MATCH_MODE_SAME_LANGUAGE",
+		2: "LANGUAGE_MATCH_MODE_LEARNING_GOALS",
+	}
+	LanguageMatchMode_value = map[string]int32{
+		"LANGUAGE_MATCH_MODE_UNSPECIFIED":    0,
+		"LANGUAGE_MATCH_MODE_SAME_LANGUAGE":  1,
+		"LANGUAGE_MATCH_MODE_LEARNING_GOALS": 2,
+	}
+)
+
+func (x LanguageMatchMode) Enum() *LanguageMatchMode {
+	p := new(LanguageMatchMode)
+	*p = x
+	return p
+}
+
+func (x LanguageMatchMode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LanguageMatchMode) Descriptor() protoreflect.EnumDescriptor {
+	return file_matchingpb_matching_proto_enumTypes[1].Descriptor()
+}
+
+func (LanguageMatchMode) Type() protoreflect.EnumType {
+	return &file_matchingpb_matching_proto_enumTypes[1]
+}
+
+func (x LanguageMatchMode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LanguageMatchMode.Descriptor instead.
+func (LanguageMatchMode) EnumDescriptor() ([]byte, []int) {
+	return file_matchingpb_matching_proto_rawDescGZIP(), []int{1}
 }
 
 type JoinQueueRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
 	Mode          MatchMode              `protobuf:"varint,2,opt,name=mode,proto3,enum=matchingpb.MatchMode" json:"mode,omitempty"`
+	LanguageMode  LanguageMatchMode      `protobuf:"varint,3,opt,name=language_mode,json=languageMode,proto3,enum=matchingpb.LanguageMatchMode" json:"language_mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *JoinQueueRequest) Reset() {
 	*x = JoinQueueRequest{}
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[0]
+	mi := &file_matchingpb_matching_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -99,7 +158,7 @@ func (x *JoinQueueRequest) String() string {
 func (*JoinQueueRequest) ProtoMessage() {}
 
 func (x *JoinQueueRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[0]
+	mi := &file_matchingpb_matching_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -112,7 +171,7 @@ func (x *JoinQueueRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinQueueRequest.ProtoReflect.Descriptor instead.
 func (*JoinQueueRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_matchingpb_matching_proto_rawDescGZIP(), []int{0}
+	return file_matchingpb_matching_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *JoinQueueRequest) GetUsername() string {
@@ -129,6 +188,13 @@ func (x *JoinQueueRequest) GetMode() MatchMode {
 	return MatchMode_MATCH_MODE_UNSPECIFIED
 }
 
+func (x *JoinQueueRequest) GetLanguageMode() LanguageMatchMode {
+	if x != nil {
+		return x.LanguageMode
+	}
+	return LanguageMatchMode_LANGUAGE_MATCH_MODE_UNSPECIFIED
+}
+
 type JoinQueueResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
@@ -138,7 +204,7 @@ type JoinQueueResponse struct {
 
 func (x *JoinQueueResponse) Reset() {
 	*x = JoinQueueResponse{}
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[1]
+	mi := &file_matchingpb_matching_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -150,7 +216,7 @@ func (x *JoinQueueResponse) String() string {
 func (*JoinQueueResponse) ProtoMessage() {}
 
 func (x *JoinQueueResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[1]
+	mi := &file_matchingpb_matching_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -163,7 +229,7 @@ func (x *JoinQueueResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinQueueResponse.ProtoReflect.Descriptor instead.
 func (*JoinQueueResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_matchingpb_matching_proto_rawDescGZIP(), []int{1}
+	return file_matchingpb_matching_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *JoinQueueResponse) GetOk() bool {
@@ -182,7 +248,7 @@ type LeaveQueueRequest struct {
 
 func (x *LeaveQueueRequest) Reset() {
 	*x = LeaveQueueRequest{}
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[2]
+	mi := &file_matchingpb_matching_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -194,7 +260,7 @@ func (x *LeaveQueueRequest) String() string {
 func (*LeaveQueueRequest) ProtoMessage() {}
 
 func (x *LeaveQueueRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[2]
+	mi := &file_matchingpb_matching_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -207,7 +273,7 @@ func (x *LeaveQueueRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveQueueRequest.ProtoReflect.Descriptor instead.
 func (*LeaveQueueRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_matchingpb_matching_proto_rawDescGZIP(), []int{2}
+	return file_matchingpb_matching_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *LeaveQueueRequest) GetUsername() string {
@@ -226,7 +292,7 @@ type LeaveQueueResponse struct {
 
 func (x *LeaveQueueResponse) Reset() {
 	*x = LeaveQueueResponse{}
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[3]
+	mi := &file_matchingpb_matching_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -238,7 +304,7 @@ func (x *LeaveQueueResponse) String() string {
 func (*LeaveQueueResponse) ProtoMessage() {}
 
 func (x *LeaveQueueResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[3]
+	mi := &file_matchingpb_matching_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -251,7 +317,7 @@ func (x *LeaveQueueResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveQueueResponse.ProtoReflect.Descriptor instead.
 func (*LeaveQueueResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_matchingpb_matching_proto_rawDescGZIP(), []int{3}
+	return file_matchingpb_matching_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *LeaveQueueResponse) GetOk() bool {
@@ -269,7 +335,7 @@ type ListQueueRequest struct {
 
 func (x *ListQueueRequest) Reset() {
 	*x = ListQueueRequest{}
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[4]
+	mi := &file_matchingpb_matching_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -281,7 +347,7 @@ func (x *ListQueueRequest) String() string {
 func (*ListQueueRequest) ProtoMessage() {}
 
 func (x *ListQueueRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[4]
+	mi := &file_matchingpb_matching_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -294,7 +360,7 @@ func (x *ListQueueRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListQueueRequest.ProtoReflect.Descriptor instead.
 func (*ListQueueRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_matchingpb_matching_proto_rawDescGZIP(), []int{4}
+	return file_matchingpb_matching_proto_rawDescGZIP(), []int{4}
 }
 
 type ListQueueResponse struct {
@@ -306,7 +372,7 @@ type ListQueueResponse struct {
 
 func (x *ListQueueResponse) Reset() {
 	*x = ListQueueResponse{}
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[5]
+	mi := &file_matchingpb_matching_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -318,7 +384,7 @@ func (x *ListQueueResponse) String() string {
 func (*ListQueueResponse) ProtoMessage() {}
 
 func (x *ListQueueResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_matchingpb_matching_proto_msgTypes[5]
+	mi := &file_matchingpb_matching_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -331,7 +397,7 @@ func (x *ListQueueResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListQueueResponse.ProtoReflect.Descriptor instead.
 func (*ListQueueResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_matchingpb_matching_proto_rawDescGZIP(), []int{5}
+	return file_matchingpb_matching_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListQueueResponse) GetUsernames() []string {
@@ -341,15 +407,16 @@ func (x *ListQueueResponse) GetUsernames() []string {
 	return nil
 }
 
-var File_api_proto_matchingpb_matching_proto protoreflect.FileDescriptor
+var File_matchingpb_matching_proto protoreflect.FileDescriptor
 
-const file_api_proto_matchingpb_matching_proto_rawDesc = "" +
+const file_matchingpb_matching_proto_rawDesc = "" +
 	"\n" +
-	"#api/proto/matchingpb/matching.proto\x12\n" +
-	"matchingpb\x1a\x1cgoogle/api/annotations.proto\x1a\x15google/api/http.proto\"Y\n" +
+	"\x19matchingpb/matching.proto\x12\n" +
+	"matchingpb\x1a\x1cgoogle/api/annotations.proto\"\x9d\x01\n" +
 	"\x10JoinQueueRequest\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12)\n" +
-	"\x04mode\x18\x02 \x01(\x0e2\x15.matchingpb.MatchModeR\x04mode\"#\n" +
+	"\x04mode\x18\x02 \x01(\x0e2\x15.matchingpb.MatchModeR\x04mode\x12B\n" +
+	"\rlanguage_mode\x18\x03 \x01(\x0e2\x1d.matchingpb.LanguageMatchModeR\flanguageMode\"#\n" +
 	"\x11JoinQueueResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"/\n" +
 	"\x11LeaveQueueRequest\x12\x1a\n" +
@@ -358,13 +425,20 @@ const file_api_proto_matchingpb_matching_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x12\n" +
 	"\x10ListQueueRequest\"1\n" +
 	"\x11ListQueueResponse\x12\x1c\n" +
-	"\tusernames\x18\x01 \x03(\tR\tusernames*\x8f\x01\n" +
+	"\tusernames\x18\x01 \x03(\tR\tusernames*\xe9\x01\n" +
 	"\tMatchMode\x12\x1a\n" +
 	"\x16MATCH_MODE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12MATCH_MODE_DEFAULT\x10\x01\x12\x17\n" +
 	"\x13MATCH_MODE_LANGUAGE\x10\x02\x12\x17\n" +
 	"\x13MATCH_MODE_INTEREST\x10\x03\x12\x1c\n" +
-	"\x18MATCH_MODE_DISCUSS_MOVIE\x10\x042\xca\x02\n" +
+	"\x18MATCH_MODE_DISCUSS_MOVIE\x10\x04\x12\x1c\n" +
+	"\x18MATCH_MODE_DISCUSS_MUSIC\x10\x05\x12\x1c\n" +
+	"\x18MATCH_MODE_DISCUSS_BOOKS\x10\x06\x12\x1c\n" +
+	"\x18MATCH_MODE_DISCUSS_SPORT\x10\a*\x87\x01\n" +
+	"\x11LanguageMatchMode\x12#\n" +
+	"\x1fLANGUAGE_MATCH_MODE_UNSPECIFIED\x10\x00\x12%\n" +
+	"!LANGUAGE_MATCH_MODE_SAME_LANGUAGE\x10\x01\x12&\n" +
+	"\"LANGUAGE_MATCH_MODE_LEARNING_GOALS\x10\x022\xca\x02\n" +
 	"\x0fMatchingService\x12f\n" +
 	"\tJoinQueue\x12\x1c.matchingpb.JoinQueueRequest\x1a\x1d.matchingpb.JoinQueueResponse\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/v1/matching/join\x12j\n" +
 	"\n" +
@@ -372,64 +446,66 @@ const file_api_proto_matchingpb_matching_proto_rawDesc = "" +
 	"\tListQueue\x12\x1c.matchingpb.ListQueueRequest\x1a\x1d.matchingpb.ListQueueResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/matching/listB9Z7github.com/chimort/course_project2/api/proto/matchingpbb\x06proto3"
 
 var (
-	file_api_proto_matchingpb_matching_proto_rawDescOnce sync.Once
-	file_api_proto_matchingpb_matching_proto_rawDescData []byte
+	file_matchingpb_matching_proto_rawDescOnce sync.Once
+	file_matchingpb_matching_proto_rawDescData []byte
 )
 
-func file_api_proto_matchingpb_matching_proto_rawDescGZIP() []byte {
-	file_api_proto_matchingpb_matching_proto_rawDescOnce.Do(func() {
-		file_api_proto_matchingpb_matching_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_proto_matchingpb_matching_proto_rawDesc), len(file_api_proto_matchingpb_matching_proto_rawDesc)))
+func file_matchingpb_matching_proto_rawDescGZIP() []byte {
+	file_matchingpb_matching_proto_rawDescOnce.Do(func() {
+		file_matchingpb_matching_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_matchingpb_matching_proto_rawDesc), len(file_matchingpb_matching_proto_rawDesc)))
 	})
-	return file_api_proto_matchingpb_matching_proto_rawDescData
+	return file_matchingpb_matching_proto_rawDescData
 }
 
-var file_api_proto_matchingpb_matching_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_proto_matchingpb_matching_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_api_proto_matchingpb_matching_proto_goTypes = []any{
+var file_matchingpb_matching_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_matchingpb_matching_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_matchingpb_matching_proto_goTypes = []any{
 	(MatchMode)(0),             // 0: matchingpb.MatchMode
-	(*JoinQueueRequest)(nil),   // 1: matchingpb.JoinQueueRequest
-	(*JoinQueueResponse)(nil),  // 2: matchingpb.JoinQueueResponse
-	(*LeaveQueueRequest)(nil),  // 3: matchingpb.LeaveQueueRequest
-	(*LeaveQueueResponse)(nil), // 4: matchingpb.LeaveQueueResponse
-	(*ListQueueRequest)(nil),   // 5: matchingpb.ListQueueRequest
-	(*ListQueueResponse)(nil),  // 6: matchingpb.ListQueueResponse
+	(LanguageMatchMode)(0),     // 1: matchingpb.LanguageMatchMode
+	(*JoinQueueRequest)(nil),   // 2: matchingpb.JoinQueueRequest
+	(*JoinQueueResponse)(nil),  // 3: matchingpb.JoinQueueResponse
+	(*LeaveQueueRequest)(nil),  // 4: matchingpb.LeaveQueueRequest
+	(*LeaveQueueResponse)(nil), // 5: matchingpb.LeaveQueueResponse
+	(*ListQueueRequest)(nil),   // 6: matchingpb.ListQueueRequest
+	(*ListQueueResponse)(nil),  // 7: matchingpb.ListQueueResponse
 }
-var file_api_proto_matchingpb_matching_proto_depIdxs = []int32{
+var file_matchingpb_matching_proto_depIdxs = []int32{
 	0, // 0: matchingpb.JoinQueueRequest.mode:type_name -> matchingpb.MatchMode
-	1, // 1: matchingpb.MatchingService.JoinQueue:input_type -> matchingpb.JoinQueueRequest
-	3, // 2: matchingpb.MatchingService.LeaveQueue:input_type -> matchingpb.LeaveQueueRequest
-	5, // 3: matchingpb.MatchingService.ListQueue:input_type -> matchingpb.ListQueueRequest
-	2, // 4: matchingpb.MatchingService.JoinQueue:output_type -> matchingpb.JoinQueueResponse
-	4, // 5: matchingpb.MatchingService.LeaveQueue:output_type -> matchingpb.LeaveQueueResponse
-	6, // 6: matchingpb.MatchingService.ListQueue:output_type -> matchingpb.ListQueueResponse
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	1, // 1: matchingpb.JoinQueueRequest.language_mode:type_name -> matchingpb.LanguageMatchMode
+	2, // 2: matchingpb.MatchingService.JoinQueue:input_type -> matchingpb.JoinQueueRequest
+	4, // 3: matchingpb.MatchingService.LeaveQueue:input_type -> matchingpb.LeaveQueueRequest
+	6, // 4: matchingpb.MatchingService.ListQueue:input_type -> matchingpb.ListQueueRequest
+	3, // 5: matchingpb.MatchingService.JoinQueue:output_type -> matchingpb.JoinQueueResponse
+	5, // 6: matchingpb.MatchingService.LeaveQueue:output_type -> matchingpb.LeaveQueueResponse
+	7, // 7: matchingpb.MatchingService.ListQueue:output_type -> matchingpb.ListQueueResponse
+	5, // [5:8] is the sub-list for method output_type
+	2, // [2:5] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_api_proto_matchingpb_matching_proto_init() }
-func file_api_proto_matchingpb_matching_proto_init() {
-	if File_api_proto_matchingpb_matching_proto != nil {
+func init() { file_matchingpb_matching_proto_init() }
+func file_matchingpb_matching_proto_init() {
+	if File_matchingpb_matching_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_matchingpb_matching_proto_rawDesc), len(file_api_proto_matchingpb_matching_proto_rawDesc)),
-			NumEnums:      1,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_matchingpb_matching_proto_rawDesc), len(file_matchingpb_matching_proto_rawDesc)),
+			NumEnums:      2,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_api_proto_matchingpb_matching_proto_goTypes,
-		DependencyIndexes: file_api_proto_matchingpb_matching_proto_depIdxs,
-		EnumInfos:         file_api_proto_matchingpb_matching_proto_enumTypes,
-		MessageInfos:      file_api_proto_matchingpb_matching_proto_msgTypes,
+		GoTypes:           file_matchingpb_matching_proto_goTypes,
+		DependencyIndexes: file_matchingpb_matching_proto_depIdxs,
+		EnumInfos:         file_matchingpb_matching_proto_enumTypes,
+		MessageInfos:      file_matchingpb_matching_proto_msgTypes,
 	}.Build()
-	File_api_proto_matchingpb_matching_proto = out.File
-	file_api_proto_matchingpb_matching_proto_goTypes = nil
-	file_api_proto_matchingpb_matching_proto_depIdxs = nil
+	File_matchingpb_matching_proto = out.File
+	file_matchingpb_matching_proto_goTypes = nil
+	file_matchingpb_matching_proto_depIdxs = nil
 }

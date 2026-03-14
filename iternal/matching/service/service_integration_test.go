@@ -31,8 +31,9 @@ func TestMatchingService_JoinFindLeaveFlow(t *testing.T) {
 	users := []string{"alice", "bob", "carol"}
 	for _, u := range users {
 		_, err := svc.JoinQueue(ctx, &matchingpb.JoinQueueRequest{
-			Username: u,
-			Mode:     matchingpb.MatchMode_MATCH_MODE_LANGUAGE,
+			Username:     u,
+			Mode:         matchingpb.MatchMode_MATCH_MODE_LANGUAGE,
+			LanguageMode: matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_LEARNING_GOALS,
 		})
 		if err != nil {
 			t.Fatalf("JoinQueue(%s) failed: %v", u, err)
@@ -52,15 +53,21 @@ func TestMatchingService_JoinFindLeaveFlow(t *testing.T) {
 	// Подменяем fetchProfiles так, чтобы была понятная логика (hardcode)
 	svc.SetFetchFunc(func(ctx context.Context, usernames []string) (map[string]UserProfile, error) {
 		out := map[string]UserProfile{
-			"alice": {ID: "alice", Age: 28, Hobbies: []string{"movies"}, Language: "English"},
-			"bob":   {ID: "bob", Age: 30, Hobbies: []string{"movies", "reading"}, Language: "English"},
-			"carol": {ID: "carol", Age: 40, Hobbies: []string{"cooking"}, Language: "Spanish"},
+			"alice": {ID: "alice", Age: 28, Hobbies: []string{"movies"}, Languages: []LanguageSkill{{Name: "English", Level: "NATIVE"}, {Name: "Russian", Level: "LOW"}}},
+			"bob":   {ID: "bob", Age: 30, Hobbies: []string{"movies", "reading"}, Languages: []LanguageSkill{{Name: "English", Level: "LOW"}, {Name: "Russian", Level: "NATIVE"}}},
+			"carol": {ID: "carol", Age: 40, Hobbies: []string{"cooking"}, Languages: []LanguageSkill{{Name: "Spanish", Level: "NATIVE"}}},
 		}
 		return out, nil
 	})
 
 	// Найдём матч для alice
-	res, err := svc.FindBestMatch(ctx, "alice", matchingpb.MatchMode_MATCH_MODE_LANGUAGE)
+	res, err := svc.findBestMatchWithSeen(
+		ctx,
+		"alice",
+		matchingpb.MatchMode_MATCH_MODE_LANGUAGE,
+		matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_LEARNING_GOALS,
+		nil,
+	)
 	if err != nil {
 		t.Fatalf("FindBestMatch failed: %v", err)
 	}

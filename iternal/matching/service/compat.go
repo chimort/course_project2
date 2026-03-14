@@ -6,16 +6,21 @@ import (
 )
 
 type UserProfile struct {
-	ID       string
-	Age      int
-	Hobbies  []string
-	Language string
+	ID        string
+	Age       int
+	Hobbies   []string
+	Languages []LanguageSkill
+}
+
+type LanguageSkill struct {
+	Name  string
+	Level string
 }
 
 type Preferences struct {
-	WeightLanguage  float64
-	WeightHobbies   float64
-	WeightAge       float64
+	WeightLanguage float64
+	WeightHobbies  float64
+	WeightAge      float64
 
 	HobbyTopic      string
 	HobbyTopicBoost float64
@@ -109,13 +114,13 @@ func CompatibilityDynamic(me UserProfile, candidate UserProfile, prefs Preferenc
 
 	var rawLang float64
 	if prefs.DesiredLanguage != "" {
-		if strings.EqualFold(candidate.Language, prefs.DesiredLanguage) {
+		if speaksLanguage(candidate, prefs.DesiredLanguage) {
 			rawLang = 1.0
 		} else {
 			rawLang = 0.0
 		}
 	} else {
-		if me.Language != "" && strings.EqualFold(me.Language, candidate.Language) {
+		if shareComfortableLanguage(me, candidate) {
 			rawLang = 1.0
 		} else {
 			rawLang = 0.0
@@ -143,7 +148,7 @@ func CompatibilityDynamic(me UserProfile, candidate UserProfile, prefs Preferenc
 		sigma = 10.0
 	}
 	diff := float64(absInt(me.Age - candidate.Age))
-	rawAge := math.Exp(- (diff*diff) / (2 * sigma * sigma))
+	rawAge := math.Exp(-(diff * diff) / (2 * sigma * sigma))
 
 	wLangC := rawLang * wLang
 	wHobbyC := rawHobby * wHobby
@@ -165,4 +170,84 @@ type scored struct {
 	id    string
 	score float64
 	bd    ScoreBreakdown
+}
+
+func speaksLanguage(p UserProfile, language string) bool {
+	for _, lang := range p.Languages {
+		if strings.EqualFold(lang.Name, language) {
+			return true
+		}
+	}
+	return false
+}
+
+func languageLevelRank(level string) int {
+	switch strings.ToUpper(strings.TrimSpace(level)) {
+	case "NATIVE":
+		return 3
+	case "MEDIUM":
+		return 2
+	case "LOW":
+		return 1
+	default:
+		return 0
+	}
+}
+
+func shareComfortableLanguage(me UserProfile, candidate UserProfile) bool {
+	for _, myLang := range me.Languages {
+		if languageLevelRank(myLang.Level) < 2 {
+			continue
+		}
+		for _, candidateLang := range candidate.Languages {
+			if strings.EqualFold(myLang.Name, candidateLang.Name) && languageLevelRank(candidateLang.Level) >= 2 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func bestLanguageExchangeScore(me UserProfile, candidate UserProfile) float64 {
+	best := 0.0
+
+	for _, myTarget := range me.Languages {
+		if languageLevelRank(myTarget.Level) != 1 {
+			continue
+		}
+
+		for _, candidateStrong := range candidate.Languages {
+			if !strings.EqualFold(myTarget.Name, candidateStrong.Name) || languageLevelRank(candidateStrong.Level) < 2 {
+				continue
+			}
+
+			for _, candidateTarget := range candidate.Languages {
+				if languageLevelRank(candidateTarget.Level) != 1 {
+					continue
+				}
+
+				for _, myStrong := range me.Languages {
+					if !strings.EqualFold(candidateTarget.Name, myStrong.Name) || languageLevelRank(myStrong.Level) < 2 {
+						continue
+					}
+
+					score := 1.0
+					if languageLevelRank(candidateStrong.Level) == 3 {
+						score += 0.1
+					}
+					if languageLevelRank(myStrong.Level) == 3 {
+						score += 0.1
+					}
+					if score > best {
+						best = score
+					}
+				}
+			}
+		}
+	}
+
+	if best > 1 {
+		return 1
+	}
+	return best
 }

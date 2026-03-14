@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v3.6.1
-// source: api/proto/matchingpb/matching.proto
+// source: matchingpb/matching.proto
 
 package matchingpb
 
@@ -193,5 +193,5 @@ var MatchingService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/proto/matchingpb/matching.proto",
+	Metadata: "matchingpb/matching.proto",
 }

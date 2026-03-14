@@ -112,15 +112,30 @@ function handleWsEvent(msg) {
   }
 }
 
+function updateLanguageModeVisibility() {
+  const modeEl = document.getElementById('match-mode');
+  const fieldEl = document.getElementById('language-match-mode-field');
+  if (!modeEl || !fieldEl) return;
+
+  fieldEl.style.display = String(modeEl.value) === '2' ? 'block' : 'none';
+}
+
 // Buttons / UI binding
 function bindMatchingEvents() {
   const btnStart = document.getElementById('btn-start-search');
   const btnLeave = document.getElementById('btn-leave-search');
+  const modeSelect = document.getElementById('match-mode');
+
+  if (modeSelect) {
+    modeSelect.onchange = updateLanguageModeVisibility;
+    updateLanguageModeVisibility();
+  }
 
   if (btnStart) {
     btnStart.onclick = async () => {
       const username = getStoredUsername();
       const mode = parseInt(document.getElementById('match-mode').value, 10);
+      const languageMode = parseInt(document.getElementById('language-match-mode')?.value || '1', 10);
 
       if (!username) {
         setMatchStatus('Login first', 'error');
@@ -137,7 +152,7 @@ function bindMatchingEvents() {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + getAccessToken()
           },
-          body: JSON.stringify({ username, mode })
+          body: JSON.stringify({ username, mode, language_mode: languageMode })
         });
 
         const data = await r.json().catch(() => ({}));

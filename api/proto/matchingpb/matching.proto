@@ -5,7 +5,6 @@ package matchingpb;
 option go_package = "github.com/chimort/course_project2/api/proto/matchingpb";
 
 import "google/api/annotations.proto";
-import "google/api/http.proto";
 
 service MatchingService {
   rpc JoinQueue(JoinQueueRequest) returns (JoinQueueResponse) {
@@ -35,11 +34,21 @@ enum MatchMode {
   MATCH_MODE_LANGUAGE = 2;
   MATCH_MODE_INTEREST = 3;
   MATCH_MODE_DISCUSS_MOVIE = 4;
+  MATCH_MODE_DISCUSS_MUSIC = 5;
+  MATCH_MODE_DISCUSS_BOOKS = 6;
+  MATCH_MODE_DISCUSS_SPORT = 7;
+}
+
+enum LanguageMatchMode {
+  LANGUAGE_MATCH_MODE_UNSPECIFIED = 0;
+  LANGUAGE_MATCH_MODE_SAME_LANGUAGE = 1;
+  LANGUAGE_MATCH_MODE_LEARNING_GOALS = 2;
 }
 
 message JoinQueueRequest {
   string username = 1;
   MatchMode mode = 2;
+  LanguageMatchMode language_mode = 3;
 }
 
 message JoinQueueResponse {

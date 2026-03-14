@@ -91,7 +91,10 @@ func (s *MatchingService) JoinQueue(ctx context.Context, req *matchingpb.JoinQue
 		return &matchingpb.JoinQueueResponse{Ok: false}, err
 	}
 
-	if err := s.redis.HSet(ctx, userQueueKey+req.Username, map[string]interface{}{"mode": req.Mode.String()}).Err(); err != nil {
+	if err := s.redis.HSet(ctx, userQueueKey+req.Username, map[string]interface{}{
+		"mode":          req.Mode.String(),
+		"language_mode": normalizeLanguageMode(req.LanguageMode).String(),
+	}).Err(); err != nil {
 		s.log.Error("failed to store user params", "error", err)
 		_ = s.redis.ZRem(ctx, queueKey, req.Username).Err()
 		return &matchingpb.JoinQueueResponse{Ok: false}, err
@@ -144,7 +147,12 @@ func (s *MatchingService) fetchProfiles(ctx context.Context, usernames []string)
 	if s.userClient == nil {
 		out := make(map[string]UserProfile, len(usernames))
 		for _, u := range usernames {
-			out[u] = UserProfile{ID: u, Age: 30, Hobbies: []string{}, Language: "English"}
+			out[u] = UserProfile{
+				ID:        u,
+				Age:       30,
+				Hobbies:   []string{},
+				Languages: []LanguageSkill{{Name: "English", Level: "NATIVE"}},
+			}
 		}
 		return out, nil
 	}
@@ -163,15 +171,18 @@ func (s *MatchingService) fetchProfiles(ctx context.Context, usernames []string)
 			continue
 		}
 		u := resp.User
-		var lang string
-		if len(u.Languages) > 0 {
-			lang = u.Languages[0].Name
+		languages := make([]LanguageSkill, 0, len(u.Languages))
+		for _, lang := range u.Languages {
+			languages = append(languages, LanguageSkill{
+				Name:  lang.Name,
+				Level: lang.Level.String(),
+			})
 		}
 		h := make([]string, 0, len(u.Interests))
 		for _, it := range u.Interests {
 			h = append(h, it.Name)
 		}
-		p := UserProfile{ID: u.Username, Age: int(u.Age), Hobbies: h, Language: lang}
+		p := UserProfile{ID: u.Username, Age: int(u.Age), Hobbies: h, Languages: languages}
 		out[uname] = p
 		s.setCachedProfile(uname, p)
 		// tiny throttle
@@ -225,19 +236,34 @@ func intersect(a, b []string) []string {
 	return out
 }
 
-func hasMovie(p UserProfile) bool {
+func hasInterest(p UserProfile, interest string) bool {
 	for _, h := range p.Hobbies {
-		if strings.EqualFold(h, "movies") {
+		if strings.EqualFold(h, interest) {
 			return true
 		}
 	}
 	return false
 }
 
+func interestTopicForMode(mode matchingpb.MatchMode) string {
+	switch mode {
+	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE:
+		return "movies"
+	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_MUSIC:
+		return "music"
+	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_BOOKS:
+		return "books"
+	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_SPORT:
+		return "sport"
+	default:
+		return ""
+	}
+}
+
 // FindBestMatch - core algorithm
 // returns MatchingResult or nil if none found
 func (s *MatchingService) FindBestMatch(ctx context.Context, username string, mode matchingpb.MatchMode) (*MatchingResult, error) {
-	return s.findBestMatchWithSeen(ctx, username, mode, nil)
+	return s.findBestMatchWithSeen(ctx, username, mode, matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE, nil)
 }
 
 func pairKey(a, b string) string {
@@ -251,6 +277,7 @@ func (s *MatchingService) findBestMatchWithSeen(
 	ctx context.Context,
 	username string,
 	mode matchingpb.MatchMode,
+	languageMode matchingpb.LanguageMatchMode,
 	seenPairs map[string]struct{},
 ) (*MatchingResult, error) {
 	all, err := s.fetchQueueUsernames(ctx, 200)
@@ -303,6 +330,7 @@ func (s *MatchingService) findBestMatchWithSeen(
 
 	var good []candidateScore
 	var allScores []candidateScore
+	topic := interestTopicForMode(mode)
 
 	for _, c := range candidates {
 		if seenPairs != nil {
@@ -318,8 +346,8 @@ func (s *MatchingService) findBestMatchWithSeen(
 			continue
 		}
 
-		if mode == matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE {
-			if !hasMovie(me) || !hasMovie(p) {
+		if topic != "" {
+			if !hasInterest(me, topic) || !hasInterest(p, topic) {
 				continue
 			}
 		}
@@ -327,16 +355,27 @@ func (s *MatchingService) findBestMatchWithSeen(
 		var prefs Preferences
 		switch mode {
 		case matchingpb.MatchMode_MATCH_MODE_LANGUAGE:
-			prefs = Preferences{WeightLanguage: 0.6, WeightHobbies: 0.2, WeightAge: 0.2}
+			prefs = Preferences{WeightLanguage: 0.7, WeightHobbies: 0.15, WeightAge: 0.15}
 		case matchingpb.MatchMode_MATCH_MODE_INTEREST:
 			prefs = Preferences{WeightHobbies: 0.6, WeightLanguage: 0.2, WeightAge: 0.2}
-		case matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE:
+		case matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE,
+			matchingpb.MatchMode_MATCH_MODE_DISCUSS_MUSIC,
+			matchingpb.MatchMode_MATCH_MODE_DISCUSS_BOOKS,
+			matchingpb.MatchMode_MATCH_MODE_DISCUSS_SPORT:
 			prefs = Preferences{WeightLanguage: 0.5, WeightAge: 0.4, WeightHobbies: 0.1}
+			prefs.HobbyTopic = topic
+			prefs.HobbyTopicBoost = 0.35
 		default:
 			prefs = Preferences{}
 		}
 
 		bd := CompatibilityDynamic(me, p, prefs)
+		if mode == matchingpb.MatchMode_MATCH_MODE_LANGUAGE && languageMode == matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_LEARNING_GOALS {
+			wLang, _, _ := normalizeWeights(prefs)
+			bd.RawLanguage = bestLanguageExchangeScore(me, p)
+			bd.WeightedLang = bd.RawLanguage * wLang
+			bd.Total = bd.WeightedLang + bd.WeightedHobby + bd.WeightedAge
+		}
 
 		allScores = append(allScores, candidateScore{id: c, total: bd.Total, bd: bd})
 
@@ -353,8 +392,10 @@ func (s *MatchingService) findBestMatchWithSeen(
 	buildResult := func(chosen string, bd ScoreBreakdown) *MatchingResult {
 		var reasonKey string
 
-		if mode == matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE {
-			reasonKey = "movies"
+		if mode == matchingpb.MatchMode_MATCH_MODE_LANGUAGE {
+			reasonKey = "language_exchange"
+		} else if topic != "" {
+			reasonKey = topic
 		} else {
 			max := bd.WeightedLang
 			reasonKey = "language"
@@ -490,8 +531,12 @@ func (s *MatchingService) runMatchCycle(ctx context.Context) {
 		if err != nil {
 			continue
 		}
+		languageMode, err := s.getUserLanguageMode(ctx, username)
+		if err != nil {
+			languageMode = matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE
+		}
 
-		_, err = s.findBestMatchWithSeen(ctx, username, mode, seenPairs)
+		_, err = s.findBestMatchWithSeen(ctx, username, mode, languageMode, seenPairs)
 		if err != nil {
 			s.log.Warn("FindBestMatch failed", "username", username, "error", err)
 		}
@@ -511,8 +556,37 @@ func (s *MatchingService) getUserMode(ctx context.Context, username string) (mat
 		return matchingpb.MatchMode_MATCH_MODE_INTEREST, nil
 	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE.String():
 		return matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE, nil
+	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_MUSIC.String():
+		return matchingpb.MatchMode_MATCH_MODE_DISCUSS_MUSIC, nil
+	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_BOOKS.String():
+		return matchingpb.MatchMode_MATCH_MODE_DISCUSS_BOOKS, nil
+	case matchingpb.MatchMode_MATCH_MODE_DISCUSS_SPORT.String():
+		return matchingpb.MatchMode_MATCH_MODE_DISCUSS_SPORT, nil
 	default:
 		return matchingpb.MatchMode_MATCH_MODE_DEFAULT, nil
+	}
+}
+
+func normalizeLanguageMode(mode matchingpb.LanguageMatchMode) matchingpb.LanguageMatchMode {
+	if mode == matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_UNSPECIFIED {
+		return matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE
+	}
+	return mode
+}
+
+func (s *MatchingService) getUserLanguageMode(ctx context.Context, username string) (matchingpb.LanguageMatchMode, error) {
+	val, err := s.redis.HGet(ctx, userQueueKey+username, "language_mode").Result()
+	if err != nil {
+		return matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE, err
+	}
+
+	switch val {
+	case matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_LEARNING_GOALS.String():
+		return matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_LEARNING_GOALS, nil
+	case matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE.String():
+		return matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE, nil
+	default:
+		return matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE, nil
 	}
 }
 
