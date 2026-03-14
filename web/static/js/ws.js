@@ -67,9 +67,10 @@
     send(obj) {
       if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
         console.log('[WS] send skipped (not open)', obj);
-        return;
+        return false;
       }
       this.socket.send(JSON.stringify(obj));
+      return true;
     },
 
     close() {

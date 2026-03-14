@@ -53,8 +53,79 @@
   margin-bottom: 10px;
 }
 
+.chat-history-btn {
+  margin-left: auto;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(2, 132, 199, 0.24);
+}
+
 #edit-profile-form {
   border-top: 1px dashed rgba(15,23,42,0.08);
   margin-top: 18px;
   padding-top: 18px;
+}
+
+.chat-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-history-item {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f9fcff);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-history-item:hover {
+  background: #f2f8ff;
+}
+
+.chat-history-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.chat-history-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-history-name {
+  font-weight: 700;
+}
+
+.chat-history-last {
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-history-empty {
+  color: var(--muted);
+  padding: 8px 0;
 }

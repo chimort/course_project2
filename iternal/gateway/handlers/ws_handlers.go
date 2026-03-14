@@ -58,7 +58,7 @@ func (h *WSHandler) HandleWS(c echo.Context) error {
 	h.log.Info("ws client connected", "username", username)
 
 	defer func() {
-		h.hub.Remove(username)
+		h.hub.Remove(username, conn)
 		h.log.Info("ws client disconnected", "username", username)
 	}()
 

@@ -33,6 +33,12 @@ service ChatService {
       get: "/v1/chat/{chat_id}/messages"
     };
   };
+
+  rpc GetUserChats(GetUserChatsRequest) returns (GetUserChatsResponse) {
+    option (google.api.http) = {
+      get: "/v1/chat/history/{username}"
+    };
+  };
 }
 
 message CreateChatRequest {
@@ -75,4 +81,19 @@ message ChatMessage {
 
 message GetMessagesResponse {
   repeated ChatMessage messages = 1;
+}
+
+message GetUserChatsRequest {
+  string username = 1;
+}
+
+message ChatPreview {
+  string chat_id = 1;
+  string peer_username = 2;
+  string last_message = 3;
+  string last_message_at = 4;
+}
+
+message GetUserChatsResponse {
+  repeated ChatPreview chats = 1;
 }

@@ -27,20 +27,91 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  function sendMessage() {
+  async function persistMessageHttp(text) {
+    const username = getStoredUsername();
+    if (!chatId || !username || !text) return false;
+
+    try {
+      const r = await fetch('/v1/chat/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getAccessToken(),
+          'X-Refresh-Token': getRefreshToken()
+        },
+        body: JSON.stringify({
+          chat_id: String(chatId),
+          sender: username,
+          content: text
+        })
+      });
+
+      const newAccess = r.headers.get('X-New-Access-Token');
+      if (newAccess) saveTokens(newAccess, getRefreshToken());
+
+      return r.ok;
+    } catch (e) {
+      console.error('persistMessageHttp error', e);
+      return false;
+    }
+  }
+
+  async function loadMessageHistory() {
+    if (!chatId) return;
+
+    try {
+      const r = await fetch(`/v1/chat/${encodeURIComponent(chatId)}/messages?limit=100`, {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer ' + getAccessToken(),
+          'X-Refresh-Token': getRefreshToken()
+        }
+      });
+
+      const newAccess = r.headers.get('X-New-Access-Token');
+      if (newAccess) saveTokens(newAccess, getRefreshToken());
+
+      const body = await r.json().catch(() => ({}));
+      const messages = body.messages || (body.body && body.body.messages) || [];
+
+      if (!r.ok || !Array.isArray(messages)) return;
+
+      const me = getStoredUsername();
+      for (const msg of messages) {
+        const text = msg.content || '';
+        const sender = msg.sender || '';
+        addMessage(text, sender === me);
+      }
+    } catch (e) {
+      console.error('loadMessageHistory error', e);
+    }
+  }
+
+  async function sendMessage() {
     const input = document.getElementById('chat-text');
     const text = input.value.trim();
     if (!text) return;
 
     input.value = '';
-    addMessage(text, true);
-
-    // server side you will handle later
-    sendWS({
+    const sentByWs = sendWS({
       type: 'chat_message',
       chat_id: chatId,
       text: text
     });
+
+    if (sentByWs) {
+      addMessage(text, true);
+      return;
+    }
+
+    const persisted = await persistMessageHttp(text);
+    if (persisted) {
+      addMessage(text, true);
+      return;
+    }
+
+    input.value = text;
+    alert('Message was not sent. Connection issue, try again.');
   }
 
   function handleWsEvent(msg) {
@@ -76,6 +147,7 @@
     } catch (_) {}
 
     setPeerUI();
+    loadMessageHistory();
 
     document.getElementById('chat-send').onclick = sendMessage;
     document.getElementById('chat-text').addEventListener('keydown', (e) => {

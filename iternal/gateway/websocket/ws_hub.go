@@ -27,14 +27,18 @@ func (h *WSHub) Set(username string, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
+	if old, ok := h.conns[username]; ok && old != nil && old != conn {
+		_ = old.Close()
+	}
+
 	h.conns[username] = conn
 }
 
-func (h *WSHub) Remove(username string) {
+func (h *WSHub) Remove(username string, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	if c, ok := h.conns[username]; ok {
+	if c, ok := h.conns[username]; ok && c == conn {
 		_ = c.Close()
 		delete(h.conns, username)
 	}

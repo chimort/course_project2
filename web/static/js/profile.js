@@ -27,6 +27,91 @@ async function loadProfile() {
   }
 }
 
+async function loadChatHistory() {
+  const username = getStoredUsername();
+  if (!username) return;
+
+  const list = document.getElementById('chat-history-list');
+  if (!list) return;
+
+  list.innerHTML = '<div class="chat-history-empty">Loading...</div>';
+
+  try {
+    const r = await fetch('/v1/chat/history/' + encodeURIComponent(username), {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + getAccessToken(),
+        'X-Refresh-Token': getRefreshToken()
+      }
+    });
+
+    const newAccess = r.headers.get('X-New-Access-Token');
+    if (newAccess) saveTokens(newAccess, getRefreshToken());
+
+    const body = await r.json().catch(() => ({}));
+    const chats = body.chats || (body.body && body.body.chats) || [];
+
+    if (!r.ok) {
+      list.innerHTML = '<div class="chat-history-empty">Could not load chat history.</div>';
+      return;
+    }
+
+    renderChatHistory(chats);
+  } catch (e) {
+    console.error('loadChatHistory error', e);
+    list.innerHTML = '<div class="chat-history-empty">Network error while loading chat history.</div>';
+  }
+}
+
+function renderChatHistory(chats) {
+  const list = document.getElementById('chat-history-list');
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  if (!Array.isArray(chats) || chats.length === 0) {
+    list.innerHTML = '<div class="chat-history-empty">No chats yet.</div>';
+    return;
+  }
+
+  for (const chat of chats) {
+    const chatId = chat.chatId || chat.chat_id || '';
+    const peer = chat.peerUsername || chat.peer_username || 'Unknown';
+    const lastMessage = chat.lastMessage || chat.last_message || 'Нет сообщений';
+
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'chat-history-item';
+
+    const avatar = document.createElement('span');
+    avatar.className = 'chat-history-avatar';
+    avatar.textContent = peer.charAt(0).toUpperCase();
+
+    const body = document.createElement('span');
+    body.className = 'chat-history-body';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'chat-history-name';
+    nameEl.textContent = peer;
+
+    const lastEl = document.createElement('span');
+    lastEl.className = 'chat-history-last';
+    lastEl.textContent = lastMessage;
+
+    body.appendChild(nameEl);
+    body.appendChild(lastEl);
+    item.appendChild(avatar);
+    item.appendChild(body);
+
+    item.onclick = () => {
+      const url = '/static/html/chat.html?chat_id=' + encodeURIComponent(chatId) + '&peer=' + encodeURIComponent(peer);
+      window.location.href = url;
+    };
+
+    list.appendChild(item);
+  }
+}
+
 function renderProfile(user) {
   const firstName = user.firstName || user.first_name || '';
   const lastName = user.lastName || user.last_name || '';
@@ -186,6 +271,17 @@ function bindProfileEvents() {
   };
 
   document.getElementById('do-update-profile').onclick = handleUpdateProfile;
+
+  document.getElementById('btn-chat-history').onclick = async () => {
+    const block = document.getElementById('chat-history-block');
+    const isHidden = block.style.display === 'none';
+
+    block.style.display = isHidden ? 'block' : 'none';
+
+    if (isHidden) {
+      await loadChatHistory();
+    }
+  };
 
   document.getElementById('toggle-interests').onclick = () => {
     toggleSection('profile-interests', 'toggle-interests');
