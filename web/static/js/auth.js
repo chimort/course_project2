@@ -20,6 +20,36 @@ function logout() {
   showPanel('login');
 }
 
+async function performLogin(username, password, statusBoxId = 'login-result') {
+  showMessage(statusBoxId, 'Signing in...', 'info');
+
+  const r = await fetch('/v1/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await r.json().catch(() => ({}));
+  const access = data.accessToken || data.access_token;
+  const refresh = data.refreshToken || data.refresh_token;
+
+  if (!(r.ok && access)) {
+    return { ok: false };
+  }
+
+  saveTokens(access, refresh);
+  saveUsername(username);
+
+  if (window.AppWS) window.AppWS.connect(username);
+
+  clearMessage(statusBoxId);
+  setAuthorizedUI(true);
+  showPanel('profile');
+  await loadProfile();
+
+  return { ok: true };
+}
+
 async function handleRegister() {
   const usernameField = document.getElementById('reg-username');
   const firstNameField = document.getElementById('reg-first-name');
@@ -76,10 +106,18 @@ async function handleRegister() {
     const data = await r.json().catch(() => ({}));
 
     if (r.ok) {
-      showMessage('reg-result', 'Account created. Now sign in.', 'success');
-      passwordField.value = '';
+      showMessage('reg-result', 'Account created. Signing you in...', 'info');
+
+      const loginResult = await performLogin(username, password, 'reg-result');
+      if (loginResult.ok) {
+        resetRegisterForm();
+        return;
+      }
+
+      showMessage('reg-result', 'Account created, but auto sign-in failed. Please log in manually.', 'error');
       document.getElementById('login-username').value = username;
       document.getElementById('login-password').value = '';
+      passwordField.value = '';
       return;
     }
 
@@ -104,33 +142,10 @@ async function handleLogin() {
   const username = usernameField.value.trim();
   const password = passwordField.value.trim();
 
-  showMessage('login-result', 'Signing in...', 'info');
-
   try {
-    const r = await fetch('/v1/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
-
-    const data = await r.json().catch(() => ({}));
-
-    const access = data.accessToken || data.access_token;
-    const refresh = data.refreshToken || data.refresh_token;
-
-    if (r.ok && access) {
-      saveTokens(access, refresh);
-      saveUsername(username);
-
-      // connect WS right after login
-      if (window.AppWS) window.AppWS.connect(username);
-
+    const result = await performLogin(username, password, 'login-result');
+    if (result.ok) {
       passwordField.value = '';
-      clearMessage('login-result');
-
-      setAuthorizedUI(true);
-      showPanel('profile');
-      await loadProfile();
       return;
     }
 

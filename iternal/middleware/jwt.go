@@ -29,7 +29,7 @@ func AuthUnaryInterceptor() grpc.UnaryServerInterceptor {
 		}
 
 		if val := md.Get("iternal"); len(val) > 0 && val[0] == "true" {
-    		return handler(ctx, req)
+			return handler(ctx, req)
 		}
 
 		authHeader := md["authorization"]
@@ -48,7 +48,7 @@ func AuthUnaryInterceptor() grpc.UnaryServerInterceptor {
 		if err != nil {
 			refreshHeader := md["x-refresh-token"]
 			if len(refreshHeader) > 0 {
-				refreshClaims, rErr := token.ValidateToken(refreshHeader[0])
+				refreshClaims, rErr := token.ValidateRefreshToken(refreshHeader[0])
 				if rErr == nil {
 					newCtx := context.WithValue(ctx, UsernameKey, refreshClaims.Username)
 					return handler(newCtx, req)

@@ -77,7 +77,19 @@ func (s *MatchingService) JoinQueue(ctx context.Context, req *matchingpb.JoinQue
 		return &matchingpb.JoinQueueResponse{Ok: false}, nil
 	}
 
-	_, err := s.redis.ZScore(ctx, queueKey, req.Username).Result()
+	topicInterest := strings.ToLower(strings.TrimSpace(req.TopicInterest))
+
+	canJoin, err := s.canJoinMode(ctx, req.Username, req.Mode, topicInterest)
+	if err != nil {
+		s.log.Error("failed to validate user mode before queue join", "username", req.Username, "mode", req.Mode.String(), "error", err)
+		return &matchingpb.JoinQueueResponse{Ok: false}, err
+	}
+	if !canJoin {
+		s.log.Warn("user tried to join unavailable interest mode", "username", req.Username, "mode", req.Mode.String())
+		return &matchingpb.JoinQueueResponse{Ok: false}, nil
+	}
+
+	_, err = s.redis.ZScore(ctx, queueKey, req.Username).Result()
 	if err == nil {
 		s.log.Warn("user already in queue", "username", req.Username)
 		return &matchingpb.JoinQueueResponse{Ok: true}, nil
@@ -93,8 +105,9 @@ func (s *MatchingService) JoinQueue(ctx context.Context, req *matchingpb.JoinQue
 	}
 
 	if err := s.redis.HSet(ctx, userQueueKey+req.Username, map[string]interface{}{
-		"mode":          req.Mode.String(),
-		"language_mode": normalizeLanguageMode(req.LanguageMode).String(),
+		"mode":           req.Mode.String(),
+		"language_mode":  normalizeLanguageMode(req.LanguageMode).String(),
+		"topic_interest": topicInterest,
 	}).Err(); err != nil {
 		s.log.Error("failed to store user params", "error", err)
 		_ = s.redis.ZRem(ctx, queueKey, req.Username).Err()
@@ -261,8 +274,52 @@ func interestTopicForMode(mode matchingpb.MatchMode) string {
 	}
 }
 
+func requiresOwnedInterest(mode matchingpb.MatchMode, topicInterest string) bool {
+	return interestTopicForMode(mode) != "" || (mode == matchingpb.MatchMode_MATCH_MODE_INTEREST && topicInterest != "")
+}
+
+func (s *MatchingService) canJoinMode(ctx context.Context, username string, mode matchingpb.MatchMode, topicInterest string) (bool, error) {
+	if !requiresOwnedInterest(mode, topicInterest) {
+		return true, nil
+	}
+
+	profiles, err := s.fetchProfiles(ctx, []string{username})
+	if err != nil {
+		return false, err
+	}
+
+	profile, ok := profiles[username]
+	if !ok {
+		return false, nil
+	}
+
+	topic := interestTopicForMode(mode)
+	if topic == "" {
+		topic = topicInterest
+	}
+
+	return hasInterest(profile, topic), nil
+}
+
 func buildFastChatID(user1, user2 string) string {
 	return fmt.Sprintf("fast-%d-%s-%s", time.Now().UnixNano(), user1, user2)
+}
+
+func (s *MatchingService) isBlockedPair(ctx context.Context, user1, user2 string) bool {
+	if s.chatClient == nil {
+		return false
+	}
+
+	resp, err := s.chatClient.GetBlockStatus(ctx, &chatpb.GetBlockStatusRequest{
+		User1: user1,
+		User2: user2,
+	})
+	if err != nil {
+		s.log.Warn("failed to check block status", "user1", user1, "user2", user2, "error", err)
+		return false
+	}
+
+	return resp.GetIsBlocked()
 }
 
 // FindBestMatch - core algorithm
@@ -336,6 +393,9 @@ func (s *MatchingService) findBestMatchWithSeen(
 	var good []candidateScore
 	var allScores []candidateScore
 	topic := interestTopicForMode(mode)
+	if topic == "" && mode == matchingpb.MatchMode_MATCH_MODE_INTEREST {
+		topic = s.getUserTopicInterest(ctx, username)
+	}
 
 	for _, c := range candidates {
 		if seenPairs != nil {
@@ -348,6 +408,9 @@ func (s *MatchingService) findBestMatchWithSeen(
 
 		p, ok := profiles[c]
 		if !ok {
+			continue
+		}
+		if s.isBlockedPair(ctx, username, c) {
 			continue
 		}
 
@@ -363,6 +426,10 @@ func (s *MatchingService) findBestMatchWithSeen(
 			prefs = Preferences{WeightLanguage: 0.7, WeightHobbies: 0.15, WeightAge: 0.15}
 		case matchingpb.MatchMode_MATCH_MODE_INTEREST:
 			prefs = Preferences{WeightHobbies: 0.6, WeightLanguage: 0.2, WeightAge: 0.2}
+			if topic != "" {
+				prefs.HobbyTopic = topic
+				prefs.HobbyTopicBoost = 0.35
+			}
 		case matchingpb.MatchMode_MATCH_MODE_DISCUSS_MOVIE,
 			matchingpb.MatchMode_MATCH_MODE_DISCUSS_MUSIC,
 			matchingpb.MatchMode_MATCH_MODE_DISCUSS_BOOKS,
@@ -423,7 +490,7 @@ func (s *MatchingService) findBestMatchWithSeen(
 			reason = "best match: fast_chat"
 		}
 		if mode == matchingpb.MatchMode_MATCH_MODE_DEFAULT ||
-			mode == matchingpb.MatchMode_MATCH_MODE_INTEREST ||
+			(mode == matchingpb.MatchMode_MATCH_MODE_INTEREST && topic == "") ||
 			(mode == matchingpb.MatchMode_MATCH_MODE_LANGUAGE &&
 				languageMode == matchingpb.LanguageMatchMode_LANGUAGE_MATCH_MODE_SAME_LANGUAGE) {
 			if len(common) > 0 {
@@ -434,12 +501,25 @@ func (s *MatchingService) findBestMatchWithSeen(
 			reason = "best match: " + reasonKey
 		}
 		tags := make([]string, 0, 3)
-		tags = append(tags, reasonKey)
+		seenTags := make(map[string]struct{}, 3)
+		normalizedReason := strings.ToLower(strings.TrimSpace(reasonKey))
+		if normalizedReason != "" {
+			tags = append(tags, normalizedReason)
+			seenTags[normalizedReason] = struct{}{}
+		}
 		for _, c := range common {
 			if len(tags) >= 3 {
 				break
 			}
-			tags = append(tags, strings.ToLower(strings.TrimSpace(c)))
+			tag := strings.ToLower(strings.TrimSpace(c))
+			if tag == "" {
+				continue
+			}
+			if _, exists := seenTags[tag]; exists {
+				continue
+			}
+			tags = append(tags, tag)
+			seenTags[tag] = struct{}{}
 		}
 		matchHint := tags[rand.Intn(len(tags))]
 		if mode == matchingpb.MatchMode_MATCH_MODE_FAST {
@@ -464,8 +544,9 @@ func (s *MatchingService) findBestMatchWithSeen(
 				)
 			} else {
 				_, err = s.chatClient.SetChatMatchTags(ctx, &chatpb.SetChatMatchTagsRequest{
-					ChatId: resp.ChatId,
-					Tags:   tags,
+					ChatId:     resp.ChatId,
+					Tags:       tags,
+					SearchMode: mode.String(),
 				})
 				if err != nil {
 					s.log.Warn("failed to set chat match tags", "chat_id", resp.ChatId, "error", err)
@@ -595,6 +676,14 @@ func (s *MatchingService) getUserMode(ctx context.Context, username string) (mat
 	default:
 		return matchingpb.MatchMode_MATCH_MODE_DEFAULT, nil
 	}
+}
+
+func (s *MatchingService) getUserTopicInterest(ctx context.Context, username string) string {
+	val, err := s.redis.HGet(ctx, userQueueKey+username, "topic_interest").Result()
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(val))
 }
 
 func normalizeLanguageMode(mode matchingpb.LanguageMatchMode) matchingpb.LanguageMatchMode {

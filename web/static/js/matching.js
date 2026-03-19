@@ -5,6 +5,8 @@ let queuePollTimer = null;
 let queueWaitTimer = null;
 let queueStartedAt = null;
 let wasInQueue = false;
+let matchingInterestsLoaded = false;
+let matchingUserInterests = [];
 
 function setMatchStatus(text, type = 'idle') {
   const el = document.getElementById('match-status');
@@ -118,30 +120,152 @@ function handleWsEvent(msg) {
   }
 }
 
+function extractInterestNames(user) {
+  const interests = Array.isArray(user?.interests) ? user.interests : [];
+  return Array.from(new Set(interests.map(it => String(it?.name || it?.interest || '').toLowerCase()).filter(Boolean)));
+}
+
+function formatInterestLabel(value) {
+  const item = (window.AppInterests?.catalog || []).find(entry => entry.value === value);
+  if (item) return item.label;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function renderMatchingInterestChips(query = '') {
+  const chipsWrap = document.getElementById('match-interest-chips');
+  const selectedInput = document.getElementById('match-topic-interest');
+  if (!chipsWrap || !selectedInput) return;
+
+  const current = selectedInput.value || '';
+  const q = String(query || '').trim().toLowerCase();
+  const interests = matchingUserInterests.filter(value => !q || formatInterestLabel(value).toLowerCase().includes(q) || value.includes(q));
+
+  chipsWrap.innerHTML = '';
+
+  if (interests.length === 0) {
+    chipsWrap.innerHTML = '<div class="match-interest-empty">No matching interests</div>';
+    return;
+  }
+
+  for (const interest of interests) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'match-interest-chip' + (interest === current ? ' active' : '');
+    btn.textContent = formatInterestLabel(interest);
+    btn.onclick = () => {
+      selectedInput.value = interest;
+      renderMatchingInterestChips(document.getElementById('match-interest-search')?.value || '');
+    };
+    chipsWrap.appendChild(btn);
+  }
+}
+
+function applyMatchingModeAvailability(userInterests) {
+  matchingUserInterests = Array.isArray(userInterests) ? userInterests : [];
+
+  const interestCard = document.querySelector('.match-mode-card[data-mode-value="3"]');
+  const modeInput = document.getElementById('match-mode');
+  const topicInput = document.getElementById('match-topic-interest');
+
+  if (interestCard) {
+    const canUseInterestMode = matchingUserInterests.length > 0;
+    interestCard.disabled = !canUseInterestMode;
+    interestCard.classList.toggle('disabled', !canUseInterestMode);
+    if (!canUseInterestMode && modeInput?.value === '3') {
+      modeInput.value = '1';
+      document.querySelector('.match-mode-card[data-mode-value="1"]')?.classList.add('active');
+      interestCard.classList.remove('active');
+    }
+  }
+
+  if (topicInput) {
+    if (!matchingUserInterests.includes(topicInput.value)) {
+      topicInput.value = matchingUserInterests[0] || '';
+    }
+  }
+
+  renderMatchingInterestChips();
+  updateLanguageModeVisibility();
+}
+
+async function refreshMatchingModeOptions() {
+  const token = getAccessToken();
+  if (!token) return;
+
+  try {
+    const r = await fetch('/v1/profile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        'X-Refresh-Token': getRefreshToken()
+      }
+    });
+
+    const newAccess = r.headers.get('X-New-Access-Token');
+    if (newAccess) saveTokens(newAccess, getRefreshToken());
+
+    const body = await r.json().catch(() => ({}));
+    const user = body.user || (body.body && body.body.user);
+    if (!r.ok || !user) return;
+
+    applyMatchingModeAvailability(extractInterestNames(user));
+    matchingInterestsLoaded = true;
+  } catch (e) {
+    console.error('refreshMatchingModeOptions error', e);
+  }
+}
+
 function updateLanguageModeVisibility() {
   const modeEl = document.getElementById('match-mode');
   const fieldEl = document.getElementById('language-match-mode-field');
-  if (!modeEl || !fieldEl) return;
+  const interestFieldEl = document.getElementById('interest-topic-field');
+  if (!modeEl || !fieldEl || !interestFieldEl) return;
 
   fieldEl.style.display = String(modeEl.value) === '2' ? 'block' : 'none';
+  interestFieldEl.style.display = String(modeEl.value) === '3' ? 'block' : 'none';
 }
 
 // Buttons / UI binding
 function bindMatchingEvents() {
   const btnStart = document.getElementById('btn-start-search');
   const btnLeave = document.getElementById('btn-leave-search');
-  const modeSelect = document.getElementById('match-mode');
+  const modeInput = document.getElementById('match-mode');
+  const modeCards = Array.from(document.querySelectorAll('.match-mode-card'));
+  const topicSearch = document.getElementById('match-interest-search');
 
-  if (modeSelect) {
-    modeSelect.onchange = updateLanguageModeVisibility;
-    updateLanguageModeVisibility();
+  modeCards.forEach(card => {
+    card.addEventListener('click', () => {
+      if (card.disabled) return;
+      modeCards.forEach(item => item.classList.remove('active'));
+      card.classList.add('active');
+      modeInput.value = card.dataset.modeValue || '1';
+      updateLanguageModeVisibility();
+    });
+  });
+
+  if (topicSearch) {
+    topicSearch.addEventListener('input', () => {
+      renderMatchingInterestChips(topicSearch.value);
+    });
   }
+
+  bindChipFilterGroup('chat-sort', 'chat-history-sort', () => loadChatHistory());
+  bindChipFilterGroup('chat-mode', 'chat-history-mode-filter', () => loadChatHistory());
+
+  updateLanguageModeVisibility();
+
+  refreshMatchingModeOptions();
 
   if (btnStart) {
     btnStart.onclick = async () => {
       const username = getStoredUsername();
+      if (!matchingInterestsLoaded) {
+        await refreshMatchingModeOptions();
+      }
       const mode = parseInt(document.getElementById('match-mode').value, 10);
       const languageMode = parseInt(document.getElementById('language-match-mode')?.value || '1', 10);
+      const topicInterest = String(document.getElementById('match-topic-interest')?.value || '').trim().toLowerCase();
 
       if (!username) {
         setMatchStatus('Login first', 'error');
@@ -151,6 +275,12 @@ function bindMatchingEvents() {
 
       setMatchResult('Joining queue...');
 
+      if (mode === 3 && !topicInterest) {
+        setMatchStatus('Choose an interest', 'error');
+        setMatchResult('Pick one of your interests for interest-focused matching.');
+        return;
+      }
+
       try {
         const r = await fetch('/v1/matching/join', {
           method: 'POST',
@@ -158,7 +288,7 @@ function bindMatchingEvents() {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + getAccessToken()
           },
-          body: JSON.stringify({ username, mode, language_mode: languageMode })
+          body: JSON.stringify({ username, mode, language_mode: languageMode, topic_interest: topicInterest })
         });
 
         const data = await r.json().catch(() => ({}));
@@ -171,7 +301,11 @@ function bindMatchingEvents() {
           setMatchResult('In queue. Waiting for match...');
         } else {
           setMatchStatus('Failed to join queue', 'error');
-          setMatchResult({ status: r.status, body: data });
+          if (mode === 3 && r.ok) {
+            setMatchResult(`You can search by ${topicInterest || 'this interest'} only if it is selected in your profile.`);
+          } else {
+            setMatchResult({ status: r.status, body: data });
+          }
         }
       } catch (e) {
         setMatchStatus('Join request failed', 'error');
@@ -229,7 +363,23 @@ function bindMatchingEvents() {
 window.AppMatching = {
   bindMatchingEvents,
   handleWsEvent,
+  refreshModes: refreshMatchingModeOptions,
   stopQueuePolling,
   stopQueueVisuals,
   resetState: () => { wasInQueue = false; }
 };
+
+function bindChipFilterGroup(groupName, inputId, onChange) {
+  const input = document.getElementById(inputId);
+  const buttons = Array.from(document.querySelectorAll(`[data-filter-group="${groupName}"]`));
+  if (!input || buttons.length === 0) return;
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(item => item.classList.remove('active'));
+      btn.classList.add('active');
+      input.value = btn.dataset.filterValue || '';
+      onChange?.();
+    });
+  });
+}

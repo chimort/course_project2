@@ -21,4 +21,6 @@ type ChatPreview struct {
 	LastMessageAt string
 	HasUnread     bool
 	MatchHint     string
+	MatchTags     []string
+	SearchMode    string
 }

@@ -7,6 +7,9 @@
   let fastChat = false;
   let didSendFirstMessage = false;
   let startersConfig = null;
+  let isBlocked = false;
+  let blockedByMe = false;
+  let blockedMe = false;
 
   function qs(name) {
     return new URLSearchParams(window.location.search).get(name);
@@ -36,10 +39,44 @@
 
     if (fastChat) {
       hintEl.textContent = 'Fast one-time chat. It is not saved.';
+    } else if (isBlocked && blockedByMe) {
+      hintEl.textContent = 'You blocked this user. Messaging is disabled.';
+    } else if (isBlocked && blockedMe) {
+      hintEl.textContent = 'This user blocked you. Messaging is disabled.';
     } else if (matchHint) {
       hintEl.textContent = 'You are most similar by: ' + toHintLabel(matchHint);
     } else {
       hintEl.textContent = '';
+    }
+  }
+
+  function applyBlockedState() {
+    const input = document.getElementById('chat-text');
+    const sendBtn = document.getElementById('chat-send');
+    const blockBtn = document.getElementById('chat-block-user');
+    if (!input || !sendBtn || !blockBtn) return;
+
+    const disabled = fastChat || isBlocked;
+    input.disabled = disabled;
+    sendBtn.disabled = disabled;
+    if (fastChat) {
+      blockBtn.style.display = 'none';
+    } else if (blockedByMe) {
+      blockBtn.disabled = false;
+      blockBtn.textContent = 'Unblock user';
+    } else if (blockedMe) {
+      blockBtn.disabled = true;
+      blockBtn.textContent = 'Blocked by user';
+    } else {
+      blockBtn.disabled = false;
+      blockBtn.textContent = 'Block user';
+    }
+
+    if (disabled) {
+      hideStarters();
+      input.placeholder = isBlocked ? 'Messaging is disabled in this chat' : 'Message...';
+    } else {
+      input.placeholder = 'Message...';
     }
   }
 
@@ -121,6 +158,125 @@
       }
     } catch (e) {
       console.error('loadMessageHistory error', e);
+    }
+  }
+
+  async function loadBlockStatus() {
+    if (fastChat || !peer) return;
+
+    const me = getStoredUsername();
+    if (!me) return;
+
+    try {
+      const r = await fetch(`/v1/chat/block-status/${encodeURIComponent(me)}/${encodeURIComponent(peer)}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer ' + getAccessToken(),
+          'X-Refresh-Token': getRefreshToken()
+        }
+      });
+
+      const newAccess = r.headers.get('X-New-Access-Token');
+      if (newAccess) saveTokens(newAccess, getRefreshToken());
+
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) return;
+
+      isBlocked = !!(body.isBlocked || body.is_blocked);
+      blockedByMe = !!(body.blockedByUser1 || body.blocked_by_user1);
+      blockedMe = !!(body.blockedByUser2 || body.blocked_by_user2);
+      setPeerUI();
+      applyBlockedState();
+    } catch (e) {
+      console.error('loadBlockStatus error', e);
+    }
+  }
+
+  async function blockCurrentUser() {
+    if (fastChat || !peer) return;
+    const me = getStoredUsername();
+    if (!me) return;
+
+    if (blockedByMe) {
+      await unblockCurrentUser();
+      return;
+    }
+
+    const confirmed = window.confirm(`Block @${peer}? They will not be able to write to you, and you will not match again.`);
+    if (!confirmed) return;
+
+    try {
+      const r = await fetch('/v1/chat/block', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getAccessToken(),
+          'X-Refresh-Token': getRefreshToken()
+        },
+        body: JSON.stringify({
+          blocker_username: me,
+          blocked_username: peer
+        })
+      });
+
+      const newAccess = r.headers.get('X-New-Access-Token');
+      if (newAccess) saveTokens(newAccess, getRefreshToken());
+
+      if (!r.ok) {
+        alert('Could not block this user right now.');
+        return;
+      }
+
+      isBlocked = true;
+      blockedByMe = true;
+      blockedMe = false;
+      setPeerUI();
+      applyBlockedState();
+    } catch (e) {
+      console.error('blockCurrentUser error', e);
+      alert('Network error while blocking user.');
+    }
+  }
+
+  async function unblockCurrentUser() {
+    if (fastChat || !peer) return;
+    const me = getStoredUsername();
+    if (!me) return;
+
+    const confirmed = window.confirm(`Unblock @${peer}? You may be able to chat and match again.`);
+    if (!confirmed) return;
+
+    try {
+      const r = await fetch('/v1/chat/unblock', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getAccessToken(),
+          'X-Refresh-Token': getRefreshToken()
+        },
+        body: JSON.stringify({
+          blocker_username: me,
+          blocked_username: peer
+        })
+      });
+
+      const newAccess = r.headers.get('X-New-Access-Token');
+      if (newAccess) saveTokens(newAccess, getRefreshToken());
+
+      if (!r.ok) {
+        alert('Could not unblock this user right now.');
+        return;
+      }
+
+      isBlocked = false;
+      blockedByMe = false;
+      blockedMe = false;
+      setPeerUI();
+      applyBlockedState();
+      await showStartersIfNeeded();
+    } catch (e) {
+      console.error('unblockCurrentUser error', e);
+      alert('Network error while unblocking user.');
     }
   }
 
@@ -227,6 +383,8 @@
   }
 
   async function sendMessage() {
+    if (isBlocked) return;
+
     const input = document.getElementById('chat-text');
     const text = input.value.trim();
     if (!text) return;
@@ -297,13 +455,16 @@
     } catch (_) {}
 
     setPeerUI();
+    await loadBlockStatus();
     if (!fastChat) {
       await loadMessageHistory();
       await markChatAsRead();
     }
     await showStartersIfNeeded();
+    applyBlockedState();
 
     document.getElementById('chat-send').onclick = sendMessage;
+    document.getElementById('chat-block-user').onclick = blockCurrentUser;
     document.getElementById('chat-text').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') sendMessage();
     });

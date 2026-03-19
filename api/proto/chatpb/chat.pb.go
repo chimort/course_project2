@@ -469,6 +469,10 @@ func (x *GetMessagesResponse) GetMessages() []*ChatMessage {
 type GetUserChatsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	SortBy        string                 `protobuf:"bytes,2,opt,name=sort_by,json=sortBy,proto3" json:"sort_by,omitempty"`
+	FilterMode    string                 `protobuf:"bytes,3,opt,name=filter_mode,json=filterMode,proto3" json:"filter_mode,omitempty"`
+	FilterTag     string                 `protobuf:"bytes,4,opt,name=filter_tag,json=filterTag,proto3" json:"filter_tag,omitempty"`
+	PeerQuery     string                 `protobuf:"bytes,5,opt,name=peer_query,json=peerQuery,proto3" json:"peer_query,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -510,6 +514,34 @@ func (x *GetUserChatsRequest) GetUsername() string {
 	return ""
 }
 
+func (x *GetUserChatsRequest) GetSortBy() string {
+	if x != nil {
+		return x.SortBy
+	}
+	return ""
+}
+
+func (x *GetUserChatsRequest) GetFilterMode() string {
+	if x != nil {
+		return x.FilterMode
+	}
+	return ""
+}
+
+func (x *GetUserChatsRequest) GetFilterTag() string {
+	if x != nil {
+		return x.FilterTag
+	}
+	return ""
+}
+
+func (x *GetUserChatsRequest) GetPeerQuery() string {
+	if x != nil {
+		return x.PeerQuery
+	}
+	return ""
+}
+
 type ChatPreview struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ChatId        string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
@@ -518,6 +550,8 @@ type ChatPreview struct {
 	LastMessageAt string                 `protobuf:"bytes,4,opt,name=last_message_at,json=lastMessageAt,proto3" json:"last_message_at,omitempty"`
 	HasUnread     bool                   `protobuf:"varint,5,opt,name=has_unread,json=hasUnread,proto3" json:"has_unread,omitempty"`
 	MatchHint     string                 `protobuf:"bytes,6,opt,name=match_hint,json=matchHint,proto3" json:"match_hint,omitempty"`
+	MatchTags     []string               `protobuf:"bytes,7,rep,name=match_tags,json=matchTags,proto3" json:"match_tags,omitempty"`
+	SearchMode    string                 `protobuf:"bytes,8,opt,name=search_mode,json=searchMode,proto3" json:"search_mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -590,6 +624,20 @@ func (x *ChatPreview) GetHasUnread() bool {
 func (x *ChatPreview) GetMatchHint() string {
 	if x != nil {
 		return x.MatchHint
+	}
+	return ""
+}
+
+func (x *ChatPreview) GetMatchTags() []string {
+	if x != nil {
+		return x.MatchTags
+	}
+	return nil
+}
+
+func (x *ChatPreview) GetSearchMode() string {
+	if x != nil {
+		return x.SearchMode
 	}
 	return ""
 }
@@ -738,6 +786,7 @@ type SetChatMatchTagsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ChatId        string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
 	Tags          []string               `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty"`
+	SearchMode    string                 `protobuf:"bytes,3,opt,name=search_mode,json=searchMode,proto3" json:"search_mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -786,6 +835,13 @@ func (x *SetChatMatchTagsRequest) GetTags() []string {
 	return nil
 }
 
+func (x *SetChatMatchTagsRequest) GetSearchMode() string {
+	if x != nil {
+		return x.SearchMode
+	}
+	return ""
+}
+
 type SetChatMatchTagsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
@@ -830,6 +886,310 @@ func (x *SetChatMatchTagsResponse) GetOk() bool {
 	return false
 }
 
+type BlockUserRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	BlockerUsername string                 `protobuf:"bytes,1,opt,name=blocker_username,json=blockerUsername,proto3" json:"blocker_username,omitempty"`
+	BlockedUsername string                 `protobuf:"bytes,2,opt,name=blocked_username,json=blockedUsername,proto3" json:"blocked_username,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *BlockUserRequest) Reset() {
+	*x = BlockUserRequest{}
+	mi := &file_chatpb_chat_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockUserRequest) ProtoMessage() {}
+
+func (x *BlockUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatpb_chat_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockUserRequest.ProtoReflect.Descriptor instead.
+func (*BlockUserRequest) Descriptor() ([]byte, []int) {
+	return file_chatpb_chat_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *BlockUserRequest) GetBlockerUsername() string {
+	if x != nil {
+		return x.BlockerUsername
+	}
+	return ""
+}
+
+func (x *BlockUserRequest) GetBlockedUsername() string {
+	if x != nil {
+		return x.BlockedUsername
+	}
+	return ""
+}
+
+type BlockUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockUserResponse) Reset() {
+	*x = BlockUserResponse{}
+	mi := &file_chatpb_chat_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockUserResponse) ProtoMessage() {}
+
+func (x *BlockUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatpb_chat_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockUserResponse.ProtoReflect.Descriptor instead.
+func (*BlockUserResponse) Descriptor() ([]byte, []int) {
+	return file_chatpb_chat_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *BlockUserResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+type GetBlockStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User1         string                 `protobuf:"bytes,1,opt,name=user1,proto3" json:"user1,omitempty"`
+	User2         string                 `protobuf:"bytes,2,opt,name=user2,proto3" json:"user2,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBlockStatusRequest) Reset() {
+	*x = GetBlockStatusRequest{}
+	mi := &file_chatpb_chat_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBlockStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBlockStatusRequest) ProtoMessage() {}
+
+func (x *GetBlockStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatpb_chat_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBlockStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetBlockStatusRequest) Descriptor() ([]byte, []int) {
+	return file_chatpb_chat_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetBlockStatusRequest) GetUser1() string {
+	if x != nil {
+		return x.User1
+	}
+	return ""
+}
+
+func (x *GetBlockStatusRequest) GetUser2() string {
+	if x != nil {
+		return x.User2
+	}
+	return ""
+}
+
+type GetBlockStatusResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	IsBlocked      bool                   `protobuf:"varint,1,opt,name=is_blocked,json=isBlocked,proto3" json:"is_blocked,omitempty"`
+	BlockedByUser1 bool                   `protobuf:"varint,2,opt,name=blocked_by_user1,json=blockedByUser1,proto3" json:"blocked_by_user1,omitempty"`
+	BlockedByUser2 bool                   `protobuf:"varint,3,opt,name=blocked_by_user2,json=blockedByUser2,proto3" json:"blocked_by_user2,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetBlockStatusResponse) Reset() {
+	*x = GetBlockStatusResponse{}
+	mi := &file_chatpb_chat_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBlockStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBlockStatusResponse) ProtoMessage() {}
+
+func (x *GetBlockStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatpb_chat_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBlockStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetBlockStatusResponse) Descriptor() ([]byte, []int) {
+	return file_chatpb_chat_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetBlockStatusResponse) GetIsBlocked() bool {
+	if x != nil {
+		return x.IsBlocked
+	}
+	return false
+}
+
+func (x *GetBlockStatusResponse) GetBlockedByUser1() bool {
+	if x != nil {
+		return x.BlockedByUser1
+	}
+	return false
+}
+
+func (x *GetBlockStatusResponse) GetBlockedByUser2() bool {
+	if x != nil {
+		return x.BlockedByUser2
+	}
+	return false
+}
+
+type UnblockUserRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	BlockerUsername string                 `protobuf:"bytes,1,opt,name=blocker_username,json=blockerUsername,proto3" json:"blocker_username,omitempty"`
+	BlockedUsername string                 `protobuf:"bytes,2,opt,name=blocked_username,json=blockedUsername,proto3" json:"blocked_username,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *UnblockUserRequest) Reset() {
+	*x = UnblockUserRequest{}
+	mi := &file_chatpb_chat_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnblockUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnblockUserRequest) ProtoMessage() {}
+
+func (x *UnblockUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatpb_chat_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnblockUserRequest.ProtoReflect.Descriptor instead.
+func (*UnblockUserRequest) Descriptor() ([]byte, []int) {
+	return file_chatpb_chat_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *UnblockUserRequest) GetBlockerUsername() string {
+	if x != nil {
+		return x.BlockerUsername
+	}
+	return ""
+}
+
+func (x *UnblockUserRequest) GetBlockedUsername() string {
+	if x != nil {
+		return x.BlockedUsername
+	}
+	return ""
+}
+
+type UnblockUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnblockUserResponse) Reset() {
+	*x = UnblockUserResponse{}
+	mi := &file_chatpb_chat_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnblockUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnblockUserResponse) ProtoMessage() {}
+
+func (x *UnblockUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatpb_chat_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnblockUserResponse.ProtoReflect.Descriptor instead.
+func (*UnblockUserResponse) Descriptor() ([]byte, []int) {
+	return file_chatpb_chat_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *UnblockUserResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
 var File_chatpb_chat_proto protoreflect.FileDescriptor
 
 const file_chatpb_chat_proto_rawDesc = "" +
@@ -859,9 +1219,16 @@ const file_chatpb_chat_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x03 \x01(\tR\tcreatedAt\"F\n" +
 	"\x13GetMessagesResponse\x12/\n" +
-	"\bmessages\x18\x01 \x03(\v2\x13.chatpb.ChatMessageR\bmessages\"1\n" +
+	"\bmessages\x18\x01 \x03(\v2\x13.chatpb.ChatMessageR\bmessages\"\xa9\x01\n" +
 	"\x13GetUserChatsRequest\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\"\xd4\x01\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x17\n" +
+	"\asort_by\x18\x02 \x01(\tR\x06sortBy\x12\x1f\n" +
+	"\vfilter_mode\x18\x03 \x01(\tR\n" +
+	"filterMode\x12\x1d\n" +
+	"\n" +
+	"filter_tag\x18\x04 \x01(\tR\tfilterTag\x12\x1d\n" +
+	"\n" +
+	"peer_query\x18\x05 \x01(\tR\tpeerQuery\"\x94\x02\n" +
 	"\vChatPreview\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12#\n" +
 	"\rpeer_username\x18\x02 \x01(\tR\fpeerUsername\x12!\n" +
@@ -870,19 +1237,43 @@ const file_chatpb_chat_proto_rawDesc = "" +
 	"\n" +
 	"has_unread\x18\x05 \x01(\bR\thasUnread\x12\x1d\n" +
 	"\n" +
-	"match_hint\x18\x06 \x01(\tR\tmatchHint\"A\n" +
+	"match_hint\x18\x06 \x01(\tR\tmatchHint\x12\x1d\n" +
+	"\n" +
+	"match_tags\x18\a \x03(\tR\tmatchTags\x12\x1f\n" +
+	"\vsearch_mode\x18\b \x01(\tR\n" +
+	"searchMode\"A\n" +
 	"\x14GetUserChatsResponse\x12)\n" +
 	"\x05chats\x18\x01 \x03(\v2\x13.chatpb.ChatPreviewR\x05chats\"J\n" +
 	"\x13MarkChatReadRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\"&\n" +
 	"\x14MarkChatReadResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"F\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"g\n" +
 	"\x17SetChatMatchTagsRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x12\n" +
-	"\x04tags\x18\x02 \x03(\tR\x04tags\"*\n" +
+	"\x04tags\x18\x02 \x03(\tR\x04tags\x12\x1f\n" +
+	"\vsearch_mode\x18\x03 \x01(\tR\n" +
+	"searchMode\"*\n" +
 	"\x18SetChatMatchTagsResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok2\xa5\x06\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"h\n" +
+	"\x10BlockUserRequest\x12)\n" +
+	"\x10blocker_username\x18\x01 \x01(\tR\x0fblockerUsername\x12)\n" +
+	"\x10blocked_username\x18\x02 \x01(\tR\x0fblockedUsername\"#\n" +
+	"\x11BlockUserResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"C\n" +
+	"\x15GetBlockStatusRequest\x12\x14\n" +
+	"\x05user1\x18\x01 \x01(\tR\x05user1\x12\x14\n" +
+	"\x05user2\x18\x02 \x01(\tR\x05user2\"\x8b\x01\n" +
+	"\x16GetBlockStatusResponse\x12\x1d\n" +
+	"\n" +
+	"is_blocked\x18\x01 \x01(\bR\tisBlocked\x12(\n" +
+	"\x10blocked_by_user1\x18\x02 \x01(\bR\x0eblockedByUser1\x12(\n" +
+	"\x10blocked_by_user2\x18\x03 \x01(\bR\x0eblockedByUser2\"j\n" +
+	"\x12UnblockUserRequest\x12)\n" +
+	"\x10blocker_username\x18\x01 \x01(\tR\x0fblockerUsername\x12)\n" +
+	"\x10blocked_username\x18\x02 \x01(\tR\x0fblockedUsername\"%\n" +
+	"\x13UnblockUserResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok2\xe7\b\n" +
 	"\vChatService\x12_\n" +
 	"\n" +
 	"CreateChat\x12\x19.chatpb.CreateChatRequest\x1a\x1a.chatpb.CreateChatResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/chat/create\x12`\n" +
@@ -891,7 +1282,10 @@ const file_chatpb_chat_proto_rawDesc = "" +
 	"\vGetMessages\x12\x1a.chatpb.GetMessagesRequest\x1a\x1b.chatpb.GetMessagesResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/v1/chat/{chat_id}/messages\x12n\n" +
 	"\fGetUserChats\x12\x1b.chatpb.GetUserChatsRequest\x1a\x1c.chatpb.GetUserChatsResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/v1/chat/history/{username}\x12x\n" +
 	"\fMarkChatRead\x12\x1b.chatpb.MarkChatReadRequest\x1a\x1c.chatpb.MarkChatReadResponse\"-\x82\xd3\xe4\x93\x02':\x01*\"\"/v1/chat/{chat_id}/read/{username}\x12\x7f\n" +
-	"\x10SetChatMatchTags\x12\x1f.chatpb.SetChatMatchTagsRequest\x1a .chatpb.SetChatMatchTagsResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/chat/{chat_id}/match-tagsB5Z3github.com/chimort/course_project2/api/proto/chatpbb\x06proto3"
+	"\x10SetChatMatchTags\x12\x1f.chatpb.SetChatMatchTagsRequest\x1a .chatpb.SetChatMatchTagsResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/chat/{chat_id}/match-tags\x12[\n" +
+	"\tBlockUser\x12\x18.chatpb.BlockUserRequest\x1a\x19.chatpb.BlockUserResponse\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/chat/block\x12~\n" +
+	"\x0eGetBlockStatus\x12\x1d.chatpb.GetBlockStatusRequest\x1a\x1e.chatpb.GetBlockStatusResponse\"-\x82\xd3\xe4\x93\x02'\x12%/v1/chat/block-status/{user1}/{user2}\x12c\n" +
+	"\vUnblockUser\x12\x1a.chatpb.UnblockUserRequest\x1a\x1b.chatpb.UnblockUserResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/chat/unblockB5Z3github.com/chimort/course_project2/api/proto/chatpbb\x06proto3"
 
 var (
 	file_chatpb_chat_proto_rawDescOnce sync.Once
@@ -905,7 +1299,7 @@ func file_chatpb_chat_proto_rawDescGZIP() []byte {
 	return file_chatpb_chat_proto_rawDescData
 }
 
-var file_chatpb_chat_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_chatpb_chat_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_chatpb_chat_proto_goTypes = []any{
 	(*CreateChatRequest)(nil),        // 0: chatpb.CreateChatRequest
 	(*CreateChatResponse)(nil),       // 1: chatpb.CreateChatResponse
@@ -923,6 +1317,12 @@ var file_chatpb_chat_proto_goTypes = []any{
 	(*MarkChatReadResponse)(nil),     // 13: chatpb.MarkChatReadResponse
 	(*SetChatMatchTagsRequest)(nil),  // 14: chatpb.SetChatMatchTagsRequest
 	(*SetChatMatchTagsResponse)(nil), // 15: chatpb.SetChatMatchTagsResponse
+	(*BlockUserRequest)(nil),         // 16: chatpb.BlockUserRequest
+	(*BlockUserResponse)(nil),        // 17: chatpb.BlockUserResponse
+	(*GetBlockStatusRequest)(nil),    // 18: chatpb.GetBlockStatusRequest
+	(*GetBlockStatusResponse)(nil),   // 19: chatpb.GetBlockStatusResponse
+	(*UnblockUserRequest)(nil),       // 20: chatpb.UnblockUserRequest
+	(*UnblockUserResponse)(nil),      // 21: chatpb.UnblockUserResponse
 }
 var file_chatpb_chat_proto_depIdxs = []int32{
 	7,  // 0: chatpb.GetMessagesResponse.messages:type_name -> chatpb.ChatMessage
@@ -934,15 +1334,21 @@ var file_chatpb_chat_proto_depIdxs = []int32{
 	9,  // 6: chatpb.ChatService.GetUserChats:input_type -> chatpb.GetUserChatsRequest
 	12, // 7: chatpb.ChatService.MarkChatRead:input_type -> chatpb.MarkChatReadRequest
 	14, // 8: chatpb.ChatService.SetChatMatchTags:input_type -> chatpb.SetChatMatchTagsRequest
-	1,  // 9: chatpb.ChatService.CreateChat:output_type -> chatpb.CreateChatResponse
-	3,  // 10: chatpb.ChatService.SendMessage:output_type -> chatpb.SendMessageResponse
-	5,  // 11: chatpb.ChatService.GetParticipants:output_type -> chatpb.GetParticipantsResponse
-	8,  // 12: chatpb.ChatService.GetMessages:output_type -> chatpb.GetMessagesResponse
-	11, // 13: chatpb.ChatService.GetUserChats:output_type -> chatpb.GetUserChatsResponse
-	13, // 14: chatpb.ChatService.MarkChatRead:output_type -> chatpb.MarkChatReadResponse
-	15, // 15: chatpb.ChatService.SetChatMatchTags:output_type -> chatpb.SetChatMatchTagsResponse
-	9,  // [9:16] is the sub-list for method output_type
-	2,  // [2:9] is the sub-list for method input_type
+	16, // 9: chatpb.ChatService.BlockUser:input_type -> chatpb.BlockUserRequest
+	18, // 10: chatpb.ChatService.GetBlockStatus:input_type -> chatpb.GetBlockStatusRequest
+	20, // 11: chatpb.ChatService.UnblockUser:input_type -> chatpb.UnblockUserRequest
+	1,  // 12: chatpb.ChatService.CreateChat:output_type -> chatpb.CreateChatResponse
+	3,  // 13: chatpb.ChatService.SendMessage:output_type -> chatpb.SendMessageResponse
+	5,  // 14: chatpb.ChatService.GetParticipants:output_type -> chatpb.GetParticipantsResponse
+	8,  // 15: chatpb.ChatService.GetMessages:output_type -> chatpb.GetMessagesResponse
+	11, // 16: chatpb.ChatService.GetUserChats:output_type -> chatpb.GetUserChatsResponse
+	13, // 17: chatpb.ChatService.MarkChatRead:output_type -> chatpb.MarkChatReadResponse
+	15, // 18: chatpb.ChatService.SetChatMatchTags:output_type -> chatpb.SetChatMatchTagsResponse
+	17, // 19: chatpb.ChatService.BlockUser:output_type -> chatpb.BlockUserResponse
+	19, // 20: chatpb.ChatService.GetBlockStatus:output_type -> chatpb.GetBlockStatusResponse
+	21, // 21: chatpb.ChatService.UnblockUser:output_type -> chatpb.UnblockUserResponse
+	12, // [12:22] is the sub-list for method output_type
+	2,  // [2:12] is the sub-list for method input_type
 	2,  // [2:2] is the sub-list for extension type_name
 	2,  // [2:2] is the sub-list for extension extendee
 	0,  // [0:2] is the sub-list for field type_name
@@ -959,7 +1365,7 @@ func file_chatpb_chat_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chatpb_chat_proto_rawDesc), len(file_chatpb_chat_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

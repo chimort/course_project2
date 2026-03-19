@@ -1,6 +1,7 @@
 // web/static/js/main.js
 
 function initApp() {
+  initInterestPickers();
   bindTabs();
   bindAuthEvents();
   bindProfileEvents();

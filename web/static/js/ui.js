@@ -41,6 +41,11 @@ function collectCheckedValues(name) {
   return Array.from(els).map(el => ({ name: el.value }));
 }
 
+function getSelectedInterestValues(name) {
+  const els = document.querySelectorAll(`input[name="${name}"]:checked`);
+  return Array.from(els).map(el => el.value);
+}
+
 function collectLanguages(prefix) {
   const els = document.querySelectorAll(`input[name="${prefix}-lang"]:checked`);
   const langs = [];
@@ -116,6 +121,13 @@ function resetRegisterForm() {
     clearFieldInvalid(el);
   });
   document.querySelectorAll('input[name="interest"]').forEach(el => el.checked = false);
+  if (window.AppInterests) {
+    window.AppInterests.renderInterestPicker({
+      rootId: 'register-interest-picker',
+      inputName: 'interest',
+      selectedValues: []
+    });
+  }
 
   clearMessage('reg-result');
 }
@@ -188,4 +200,20 @@ function bindTabs() {
   if (btnLogin) btnLogin.onclick = () => showPanel('login');
   if (btnProfile) btnProfile.onclick = () => showPanel('profile');
   if (btnMatching) btnMatching.onclick = () => showPanel('matching');
+}
+
+function initInterestPickers() {
+  if (!window.AppInterests) return;
+
+  window.AppInterests.renderInterestPicker({
+    rootId: 'register-interest-picker',
+    inputName: 'interest',
+    selectedValues: []
+  });
+
+  window.AppInterests.renderInterestPicker({
+    rootId: 'edit-interest-picker',
+    inputName: 'upd-interest',
+    selectedValues: []
+  });
 }

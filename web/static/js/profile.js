@@ -1,3 +1,16 @@
+const CHAT_HISTORY_MODE_LABELS = {
+  MATCH_MODE_DEFAULT: 'General',
+  MATCH_MODE_LANGUAGE: 'By languages',
+  MATCH_MODE_INTEREST: 'Shared interests',
+  MATCH_MODE_DISCUSS_MOVIE: 'Discuss movies',
+  MATCH_MODE_DISCUSS_MUSIC: 'Discuss music',
+  MATCH_MODE_DISCUSS_BOOKS: 'Discuss books',
+  MATCH_MODE_DISCUSS_SPORT: 'Discuss sport',
+  MATCH_MODE_FAST: 'Fast'
+};
+
+let chatHistoryFilterTimer = null;
+
 async function loadProfile() {
   const username = getStoredUsername();
   if (!username) return;
@@ -22,6 +35,7 @@ async function loadProfile() {
 
     renderProfile(user);
     fillEditProfile(user);
+    window.AppMatching?.refreshModes?.();
   } catch (e) {
     console.error('loadProfile error', e);
   }
@@ -36,8 +50,20 @@ async function loadChatHistory() {
 
   list.innerHTML = '<div class="chat-history-empty">Loading...</div>';
 
+  const sortBy = document.getElementById('chat-history-sort')?.value || 'recent';
+  const filterMode = document.getElementById('chat-history-mode-filter')?.value || '';
+  const peerQuery = document.getElementById('chat-history-peer-filter')?.value?.trim() || '';
+
+  const params = new URLSearchParams();
+  if (sortBy) params.set('sort_by', sortBy);
+  if (filterMode) params.set('filter_mode', filterMode);
+  if (peerQuery) params.set('peer_query', peerQuery);
+
+  const url = '/v1/chat/history/' + encodeURIComponent(username)
+    + (params.toString() ? ('?' + params.toString()) : '');
+
   try {
-    const r = await fetch('/v1/chat/history/' + encodeURIComponent(username), {
+    const r = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': 'Bearer ' + getAccessToken(),
@@ -63,6 +89,37 @@ async function loadChatHistory() {
   }
 }
 
+function formatChatHistoryTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const today = now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+
+  if (date.toDateString() === today) {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  }
+
+  if (date.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    day: '2-digit',
+    month: 'short'
+  }).format(date);
+}
+
+function humanizeSearchMode(mode) {
+  return CHAT_HISTORY_MODE_LABELS[mode] || 'General';
+}
+
 function renderChatHistory(chats) {
   const list = document.getElementById('chat-history-list');
   if (!list) return;
@@ -77,9 +134,11 @@ function renderChatHistory(chats) {
   for (const chat of chats) {
     const chatId = chat.chatId || chat.chat_id || '';
     const peer = chat.peerUsername || chat.peer_username || 'Unknown';
-    const lastMessage = chat.lastMessage || chat.last_message || 'Нет сообщений';
+    const lastMessage = chat.lastMessage || chat.last_message || 'No messages';
+    const lastMessageAt = chat.lastMessageAt || chat.last_message_at || '';
     const hasUnread = !!(chat.hasUnread || chat.has_unread);
     const matchHint = chat.matchHint || chat.match_hint || '';
+    const searchMode = chat.searchMode || chat.search_mode || 'MATCH_MODE_DEFAULT';
 
     const item = document.createElement('button');
     item.type = 'button';
@@ -96,12 +155,31 @@ function renderChatHistory(chats) {
     nameEl.className = 'chat-history-name';
     nameEl.textContent = peer;
 
+    const timeEl = document.createElement('span');
+    timeEl.className = 'chat-history-time';
+    timeEl.textContent = formatChatHistoryTime(lastMessageAt);
+    if (lastMessageAt) timeEl.title = new Date(lastMessageAt).toLocaleString();
+
+    const topRow = document.createElement('span');
+    topRow.className = 'chat-history-top';
+    topRow.appendChild(nameEl);
+    topRow.appendChild(timeEl);
+
     const lastEl = document.createElement('span');
     lastEl.className = 'chat-history-last';
     lastEl.textContent = lastMessage;
 
-    body.appendChild(nameEl);
+    const metaRow = document.createElement('span');
+    metaRow.className = 'chat-history-meta-row';
+
+    const modeBadge = document.createElement('span');
+    modeBadge.className = 'chat-history-badge mode';
+    modeBadge.textContent = humanizeSearchMode(searchMode);
+    metaRow.appendChild(modeBadge);
+
+    body.appendChild(topRow);
     body.appendChild(lastEl);
+    body.appendChild(metaRow);
     item.appendChild(avatar);
     item.appendChild(body);
 
@@ -120,6 +198,24 @@ function renderChatHistory(chats) {
     };
 
     list.appendChild(item);
+  }
+}
+
+function bindChatHistoryControls() {
+  ['chat-history-sort', 'chat-history-mode-filter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', () => {
+      loadChatHistory();
+    });
+  });
+
+  const peerInput = document.getElementById('chat-history-peer-filter');
+  if (peerInput) {
+    peerInput.addEventListener('input', () => {
+      if (chatHistoryFilterTimer) clearTimeout(chatHistoryFilterTimer);
+      chatHistoryFilterTimer = setTimeout(() => loadChatHistory(), 220);
+    });
   }
 }
 
@@ -177,19 +273,19 @@ function fillEditProfile(user) {
 
   clearFieldInvalid(document.getElementById('upd-age'));
 
-  document.querySelectorAll('input[name="upd-interest"]').forEach(el => { el.checked = false; });
+  if (window.AppInterests) {
+    window.AppInterests.renderInterestPicker({
+      rootId: 'edit-interest-picker',
+      inputName: 'upd-interest',
+      selectedValues: (Array.isArray(user.interests) ? user.interests : []).map(it => String(it.name || it.interest || '').toLowerCase())
+    });
+  }
+
   document.querySelectorAll('input[name="edit-lang"]').forEach(el => { el.checked = false; });
   document.querySelectorAll('select[name="edit-lang-level-en"], select[name="edit-lang-level-ru"]').forEach(el => {
     el.value = '';
     clearFieldInvalid(el);
   });
-
-  const interests = Array.isArray(user.interests) ? user.interests : [];
-  for (const it of interests) {
-    const val = String(it.name || it.interest || '').toLowerCase();
-    const el = document.querySelector(`input[name="upd-interest"][value="${val}"]`);
-    if (el) el.checked = true;
-  }
 
   const langs = Array.isArray(user.languages) ? user.languages : [];
   for (const l of langs) {
@@ -301,4 +397,6 @@ function bindProfileEvents() {
   document.getElementById('toggle-languages').onclick = () => {
     toggleSection('profile-languages', 'toggle-languages');
   };
+
+  bindChatHistoryControls();
 }

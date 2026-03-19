@@ -3,7 +3,9 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/chimort/course_project2/iternal/chat/models"
 	"github.com/lib/pq"
@@ -13,11 +15,24 @@ type ChatRepository struct {
 	db *sql.DB
 }
 
+var (
+	ErrUsersBlocked    = errors.New("users are blocked")
+	ErrCannotBlockSelf = errors.New("cannot block self")
+)
+
 func NewChatRepository(db *sql.DB) *ChatRepository {
 	return &ChatRepository{db: db}
 }
 
 func (r *ChatRepository) CreateChat(ctx context.Context, user1, user2 string) (*models.Chat, error) {
+	blocked, _, _, err := r.GetBlockStatus(ctx, user1, user2)
+	if err != nil {
+		return nil, err
+	}
+	if blocked {
+		return nil, ErrUsersBlocked
+	}
+
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -60,7 +75,15 @@ func (r *ChatRepository) CreateChat(ctx context.Context, user1, user2 string) (*
 }
 
 func (r *ChatRepository) SendMessage(ctx context.Context, chatID int, sender, content string) error {
-	_, err := r.db.ExecContext(
+	blocked, err := r.IsChatBlockedForUser(ctx, chatID, sender)
+	if err != nil {
+		return err
+	}
+	if blocked {
+		return ErrUsersBlocked
+	}
+
+	_, err = r.db.ExecContext(
 		ctx,
 		`INSERT INTO messages (chat_id, sender_name, content)
 		 VALUES ($1,$2,$3)`,
@@ -80,6 +103,20 @@ func (r *ChatRepository) SendMessage(ctx context.Context, chatID int, sender, co
 		chatID,
 	)
 	return err
+}
+
+func (r *ChatRepository) GetPeerUsername(ctx context.Context, chatID int, username string) (string, error) {
+	var peer string
+	err := r.db.QueryRowContext(
+		ctx,
+		`SELECT username
+		 FROM chat_participants
+		 WHERE chat_id = $1 AND username <> $2
+		 LIMIT 1`,
+		chatID,
+		username,
+	).Scan(&peer)
+	return peer, err
 }
 
 func (r *ChatRepository) GetParticipants(ctx context.Context, chatID int) ([]string, error) {
@@ -152,6 +189,20 @@ func (r *ChatRepository) GetMessages(ctx context.Context, chatID int, limit int)
 }
 
 func (r *ChatRepository) GetUserChats(ctx context.Context, username string) ([]models.ChatPreview, error) {
+	return r.GetUserChatsFiltered(ctx, username, "recent", "", "", "")
+}
+
+func (r *ChatRepository) GetUserChatsFiltered(ctx context.Context, username, sortBy, filterMode, filterTag, peerQuery string) ([]models.ChatPreview, error) {
+	orderClause := "sort_at DESC, chat_id DESC"
+	switch strings.ToLower(strings.TrimSpace(sortBy)) {
+	case "oldest":
+		orderClause = "sort_at ASC, chat_id ASC"
+	case "peer_asc":
+		orderClause = "peer_username ASC, sort_at DESC, chat_id DESC"
+	case "peer_desc":
+		orderClause = "peer_username DESC, sort_at DESC, chat_id DESC"
+	}
+
 	rows, err := r.db.QueryContext(
 		ctx,
 		`WITH raw AS (
@@ -173,21 +224,24 @@ func (r *ChatRepository) GetUserChats(ctx context.Context, username string) ([]m
 				) AS has_unread,
 				COALESCE(
 					(
-						SELECT chh.match_tags[
-							1 + floor(random() * array_length(chh.match_tags, 1))::int
+						SELECT hist.match_tags[
+							1 + floor(random() * array_length(hist.match_tags, 1))::int
 						]
-						FROM chat_histories chh
-						WHERE chh.chat_id = cp.chat_id
-						  AND array_length(chh.match_tags, 1) > 0
+						FROM chat_histories hist
+						WHERE hist.chat_id = cp.chat_id
+						  AND array_length(hist.match_tags, 1) > 0
 					),
 					''
 				) AS match_hint,
+				COALESCE(hist.match_tags, ARRAY[]::text[]) AS match_tags,
+				COALESCE(hist.search_mode, 'MATCH_MODE_DEFAULT') AS search_mode,
 				row_number() OVER (
 					PARTITION BY COALESCE(peer.username, '')
 					ORDER BY COALESCE(last_msg.created_at, ch.created_at) DESC, cp.chat_id DESC
 				) AS rn
 			FROM chat_participants cp
 			JOIN chats ch ON ch.id = cp.chat_id
+			LEFT JOIN chat_histories hist ON hist.chat_id = cp.chat_id
 			LEFT JOIN chat_participants peer
 				ON peer.chat_id = cp.chat_id
 				AND peer.username <> $1
@@ -200,11 +254,21 @@ func (r *ChatRepository) GetUserChats(ctx context.Context, username string) ([]m
 			) AS last_msg ON true
 			WHERE cp.username = $1
 		)
-		SELECT chat_id, peer_username, last_message, last_message_at, has_unread, match_hint
+		SELECT chat_id, peer_username, last_message, last_message_at, has_unread, match_hint, match_tags, search_mode
 		FROM raw
 		WHERE rn = 1
-		ORDER BY sort_at DESC, chat_id DESC`,
+		  AND ($2 = '' OR search_mode = $2)
+		  AND ($3 = '' OR EXISTS (
+			SELECT 1
+			FROM unnest(match_tags) AS tag
+			WHERE lower(tag) = lower($3)
+		  ))
+		  AND ($4 = '' OR peer_username ILIKE '%' || $4 || '%')
+		ORDER BY `+orderClause,
 		username,
+		filterMode,
+		filterTag,
+		peerQuery,
 	)
 	if err != nil {
 		return nil, err
@@ -222,6 +286,8 @@ func (r *ChatRepository) GetUserChats(ctx context.Context, username string) ([]m
 			&chat.LastMessageAt,
 			&chat.HasUnread,
 			&chat.MatchHint,
+			pq.Array(&chat.MatchTags),
+			&chat.SearchMode,
 		); err != nil {
 			return nil, err
 		}
@@ -260,4 +326,95 @@ func (r *ChatRepository) SetChatMatchTags(ctx context.Context, chatID int, tags 
 		pq.Array(tags),
 	)
 	return err
+}
+
+func (r *ChatRepository) SetChatMatchMetadata(ctx context.Context, chatID int, tags []string, searchMode string) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`UPDATE chat_histories
+		 SET match_tags = $2,
+		     search_mode = $3
+		 WHERE chat_id = $1`,
+		chatID,
+		pq.Array(tags),
+		searchMode,
+	)
+	return err
+}
+
+func (r *ChatRepository) BlockUser(ctx context.Context, blocker, blocked string) error {
+	if blocker == "" || blocked == "" {
+		return nil
+	}
+	if blocker == blocked {
+		return ErrCannotBlockSelf
+	}
+
+	_, err := r.db.ExecContext(
+		ctx,
+		`INSERT INTO blocked_users (blocker_username, blocked_username)
+		 VALUES ($1, $2)
+		 ON CONFLICT (blocker_username, blocked_username) DO NOTHING`,
+		blocker,
+		blocked,
+	)
+	return err
+}
+
+func (r *ChatRepository) UnblockUser(ctx context.Context, blocker, blocked string) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`DELETE FROM blocked_users
+		 WHERE blocker_username = $1 AND blocked_username = $2`,
+		blocker,
+		blocked,
+	)
+	return err
+}
+
+func (r *ChatRepository) GetBlockStatus(ctx context.Context, user1, user2 string) (bool, bool, bool, error) {
+	rows, err := r.db.QueryContext(
+		ctx,
+		`SELECT blocker_username, blocked_username
+		 FROM blocked_users
+		 WHERE (blocker_username = $1 AND blocked_username = $2)
+		    OR (blocker_username = $2 AND blocked_username = $1)`,
+		user1,
+		user2,
+	)
+	if err != nil {
+		return false, false, false, err
+	}
+	defer rows.Close()
+
+	var byUser1 bool
+	var byUser2 bool
+	for rows.Next() {
+		var blocker string
+		var blocked string
+		if err := rows.Scan(&blocker, &blocked); err != nil {
+			return false, false, false, err
+		}
+		if blocker == user1 && blocked == user2 {
+			byUser1 = true
+		}
+		if blocker == user2 && blocked == user1 {
+			byUser2 = true
+		}
+	}
+
+	return byUser1 || byUser2, byUser1, byUser2, rows.Err()
+}
+
+func (r *ChatRepository) IsChatBlockedForUser(ctx context.Context, chatID int, username string) (bool, error) {
+	peer, err := r.GetPeerUsername(ctx, chatID, username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	blocked, _, _, err := r.GetBlockStatus(ctx, username, peer)
+	return blocked, err
 }

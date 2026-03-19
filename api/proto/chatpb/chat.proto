@@ -53,6 +53,26 @@ service ChatService {
       body: "*"
     };
   };
+
+  rpc BlockUser(BlockUserRequest) returns (BlockUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/chat/block"
+      body: "*"
+    };
+  };
+
+  rpc GetBlockStatus(GetBlockStatusRequest) returns (GetBlockStatusResponse) {
+    option (google.api.http) = {
+      get: "/v1/chat/block-status/{user1}/{user2}"
+    };
+  };
+
+  rpc UnblockUser(UnblockUserRequest) returns (UnblockUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/chat/unblock"
+      body: "*"
+    };
+  };
 }
 
 message CreateChatRequest {
@@ -99,6 +119,10 @@ message GetMessagesResponse {
 
 message GetUserChatsRequest {
   string username = 1;
+  string sort_by = 2;
+  string filter_mode = 3;
+  string filter_tag = 4;
+  string peer_query = 5;
 }
 
 message ChatPreview {
@@ -108,6 +132,8 @@ message ChatPreview {
   string last_message_at = 4;
   bool has_unread = 5;
   string match_hint = 6;
+  repeated string match_tags = 7;
+  string search_mode = 8;
 }
 
 message GetUserChatsResponse {
@@ -126,8 +152,38 @@ message MarkChatReadResponse {
 message SetChatMatchTagsRequest {
   string chat_id = 1;
   repeated string tags = 2;
+  string search_mode = 3;
 }
 
 message SetChatMatchTagsResponse {
+  bool ok = 1;
+}
+
+message BlockUserRequest {
+  string blocker_username = 1;
+  string blocked_username = 2;
+}
+
+message BlockUserResponse {
+  bool ok = 1;
+}
+
+message GetBlockStatusRequest {
+  string user1 = 1;
+  string user2 = 2;
+}
+
+message GetBlockStatusResponse {
+  bool is_blocked = 1;
+  bool blocked_by_user1 = 2;
+  bool blocked_by_user2 = 3;
+}
+
+message UnblockUserRequest {
+  string blocker_username = 1;
+  string blocked_username = 2;
+}
+
+message UnblockUserResponse {
   bool ok = 1;
 }

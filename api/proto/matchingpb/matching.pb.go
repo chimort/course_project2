@@ -143,6 +143,7 @@ type JoinQueueRequest struct {
 	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
 	Mode          MatchMode              `protobuf:"varint,2,opt,name=mode,proto3,enum=matchingpb.MatchMode" json:"mode,omitempty"`
 	LanguageMode  LanguageMatchMode      `protobuf:"varint,3,opt,name=language_mode,json=languageMode,proto3,enum=matchingpb.LanguageMatchMode" json:"language_mode,omitempty"`
+	TopicInterest string                 `protobuf:"bytes,4,opt,name=topic_interest,json=topicInterest,proto3" json:"topic_interest,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -196,6 +197,13 @@ func (x *JoinQueueRequest) GetLanguageMode() LanguageMatchMode {
 		return x.LanguageMode
 	}
 	return LanguageMatchMode_LANGUAGE_MATCH_MODE_UNSPECIFIED
+}
+
+func (x *JoinQueueRequest) GetTopicInterest() string {
+	if x != nil {
+		return x.TopicInterest
+	}
+	return ""
 }
 
 type JoinQueueResponse struct {
@@ -415,11 +423,12 @@ var File_matchingpb_matching_proto protoreflect.FileDescriptor
 const file_matchingpb_matching_proto_rawDesc = "" +
 	"\n" +
 	"\x19matchingpb/matching.proto\x12\n" +
-	"matchingpb\x1a\x1cgoogle/api/annotations.proto\"\x9d\x01\n" +
+	"matchingpb\x1a\x1cgoogle/api/annotations.proto\"\xc4\x01\n" +
 	"\x10JoinQueueRequest\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12)\n" +
 	"\x04mode\x18\x02 \x01(\x0e2\x15.matchingpb.MatchModeR\x04mode\x12B\n" +
-	"\rlanguage_mode\x18\x03 \x01(\x0e2\x1d.matchingpb.LanguageMatchModeR\flanguageMode\"#\n" +
+	"\rlanguage_mode\x18\x03 \x01(\x0e2\x1d.matchingpb.LanguageMatchModeR\flanguageMode\x12%\n" +
+	"\x0etopic_interest\x18\x04 \x01(\tR\rtopicInterest\"#\n" +
 	"\x11JoinQueueResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"/\n" +
 	"\x11LeaveQueueRequest\x12\x1a\n" +

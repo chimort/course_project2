@@ -50,6 +50,7 @@ message JoinQueueRequest {
   string username = 1;
   MatchMode mode = 2;
   LanguageMatchMode language_mode = 3;
+  string topic_interest = 4;
 }
 
 message JoinQueueResponse {

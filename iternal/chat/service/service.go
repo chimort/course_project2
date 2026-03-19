@@ -46,10 +46,30 @@ func (s *ChatService) GetUserChats(ctx context.Context, username string) ([]mode
 	return s.repo.GetUserChats(ctx, username)
 }
 
+func (s *ChatService) GetUserChatsFiltered(ctx context.Context, username, sortBy, filterMode, filterTag, peerQuery string) ([]models.ChatPreview, error) {
+	return s.repo.GetUserChatsFiltered(ctx, username, sortBy, filterMode, filterTag, peerQuery)
+}
+
 func (s *ChatService) MarkChatRead(ctx context.Context, chatID int, username string) error {
 	return s.repo.MarkChatRead(ctx, chatID, username)
 }
 
 func (s *ChatService) SetChatMatchTags(ctx context.Context, chatID int, tags []string) error {
 	return s.repo.SetChatMatchTags(ctx, chatID, tags)
+}
+
+func (s *ChatService) SetChatMatchMetadata(ctx context.Context, chatID int, tags []string, searchMode string) error {
+	return s.repo.SetChatMatchMetadata(ctx, chatID, tags, searchMode)
+}
+
+func (s *ChatService) BlockUser(ctx context.Context, blocker, blocked string) error {
+	return s.repo.BlockUser(ctx, blocker, blocked)
+}
+
+func (s *ChatService) GetBlockStatus(ctx context.Context, user1, user2 string) (bool, bool, bool, error) {
+	return s.repo.GetBlockStatus(ctx, user1, user2)
+}
+
+func (s *ChatService) UnblockUser(ctx context.Context, blocker, blocked string) error {
+	return s.repo.UnblockUser(ctx, blocker, blocked)
 }

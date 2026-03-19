@@ -31,32 +31,32 @@
 
       <div class="form-grid">
         <label class="field">
-          <span>Username</span>
+          <span>Username <span class="required-mark">*</span></span>
           <input id="reg-username" />
         </label>
 
         <label class="field">
-          <span>First Name</span>
+          <span>First Name <span class="required-mark">*</span></span>
           <input id="reg-first-name" />
         </label>
 
         <label class="field">
-          <span>Last Name</span>
+          <span>Last Name <span class="required-mark">*</span></span>
           <input id="reg-last-name" />
         </label>
 
         <label class="field">
-          <span>Email</span>
+          <span>Email <span class="required-mark">*</span></span>
           <input id="reg-email" type="email" />
         </label>
 
         <label class="field">
-          <span>Password</span>
+          <span>Password <span class="required-mark">*</span></span>
           <input id="reg-password" type="password" />
         </label>
 
         <label class="field">
-          <span>Age</span>
+          <span>Age <span class="required-mark">*</span></span>
           <input id="reg-age" type="number" min="0" />
         </label>
 
@@ -93,12 +93,7 @@
 
       <div class="group">
         <div class="group-title">Interests</div>
-        <div class="chips-wrap">
-          <label class="chip-check"><input type="checkbox" name="interest" value="music" /> <span>Music</span></label>
-          <label class="chip-check"><input type="checkbox" name="interest" value="movies" /> <span>Movies</span></label>
-          <label class="chip-check"><input type="checkbox" name="interest" value="sport" /> <span>Sport</span></label>
-          <label class="chip-check"><input type="checkbox" name="interest" value="books" /> <span>Books</span></label>
-        </div>
+        <div id="register-interest-picker"></div>
       </div>
 
       <button id="do-register">Register</button>
@@ -166,6 +161,33 @@
           <div class="section-head">
             <h3>Chat history</h3>
           </div>
+          <div class="chat-history-controls">
+            <div class="field">
+              <span>Sort by</span>
+              <div class="chip-filter-row" id="chat-history-sort-row">
+                <button type="button" class="chip-filter active" data-filter-group="chat-sort" data-filter-value="recent">Recent</button>
+                <button type="button" class="chip-filter" data-filter-group="chat-sort" data-filter-value="oldest">Oldest</button>
+                <button type="button" class="chip-filter" data-filter-group="chat-sort" data-filter-value="peer_asc">A-Z</button>
+                <button type="button" class="chip-filter" data-filter-group="chat-sort" data-filter-value="peer_desc">Z-A</button>
+              </div>
+              <input type="hidden" id="chat-history-sort" value="recent" />
+            </div>
+            <div class="field">
+              <span>Search mode</span>
+              <div class="chip-filter-row" id="chat-history-mode-row">
+                <button type="button" class="chip-filter active" data-filter-group="chat-mode" data-filter-value="">All</button>
+                <button type="button" class="chip-filter" data-filter-group="chat-mode" data-filter-value="MATCH_MODE_DEFAULT">General</button>
+                <button type="button" class="chip-filter" data-filter-group="chat-mode" data-filter-value="MATCH_MODE_LANGUAGE">Languages</button>
+                <button type="button" class="chip-filter" data-filter-group="chat-mode" data-filter-value="MATCH_MODE_INTEREST">Interest focus</button>
+                <button type="button" class="chip-filter" data-filter-group="chat-mode" data-filter-value="MATCH_MODE_FAST">Fast</button>
+              </div>
+              <input type="hidden" id="chat-history-mode-filter" value="" />
+            </div>
+            <label class="field">
+              <span>Partner</span>
+              <input id="chat-history-peer-filter" placeholder="Type a username" />
+            </label>
+          </div>
           <div id="chat-history-list" class="chat-history-list"></div>
         </div>
 
@@ -213,12 +235,7 @@
 
           <div class="group">
             <div class="group-title">Interests</div>
-            <div class="chips-wrap">
-              <label class="chip-check"><input type="checkbox" name="upd-interest" value="music" /> <span>Music</span></label>
-              <label class="chip-check"><input type="checkbox" name="upd-interest" value="movies" /> <span>Movies</span></label>
-              <label class="chip-check"><input type="checkbox" name="upd-interest" value="sport" /> <span>Sport</span></label>
-              <label class="chip-check"><input type="checkbox" name="upd-interest" value="books" /> <span>Books</span></label>
-            </div>
+            <div id="edit-interest-picker"></div>
           </div>
 
           <button id="do-update-profile">Save changes</button>
@@ -232,19 +249,28 @@
       <h2>Find a match</h2>
 
       <div class="match-card">
-        <label class="field">
+        <div class="field">
           <span>Search mode</span>
-          <select id="match-mode">
-            <option value="1">General</option>
-            <option value="2">By languages</option>
-            <option value="3">Shared interests</option>
-            <option value="4">Discuss movies</option>
-            <option value="5">Discuss music</option>
-            <option value="6">Discuss books</option>
-            <option value="7">Discuss sport</option>
-            <option value="8">Fast</option>
-          </select>
-        </label>
+          <div class="match-mode-grid" id="match-mode-grid">
+            <button type="button" class="match-mode-card active" data-mode-value="1">
+              <strong>General</strong>
+              <span>Balanced match by all main signals</span>
+            </button>
+            <button type="button" class="match-mode-card" data-mode-value="2">
+              <strong>By languages</strong>
+              <span>Speak together or learn from each other</span>
+            </button>
+            <button type="button" class="match-mode-card" data-mode-value="3">
+              <strong>Interest focus</strong>
+              <span>Choose one interest and look for that vibe</span>
+            </button>
+            <button type="button" class="match-mode-card" data-mode-value="8">
+              <strong>Fast</strong>
+              <span>Quick one-time chat with low friction</span>
+            </button>
+          </div>
+          <input type="hidden" id="match-mode" value="1" />
+        </div>
 
         <label class="field" id="language-match-mode-field" style="display:none;">
           <span>Language search goal</span>
@@ -253,6 +279,15 @@
             <option value="2">Learning goals</option>
           </select>
         </label>
+
+        <div class="field" id="interest-topic-field" style="display:none;">
+          <span>Pick an interest to focus on</span>
+          <div class="match-interest-shell">
+            <input id="match-interest-search" class="interest-search" placeholder="Search your interests" />
+            <div id="match-interest-chips" class="match-interest-chips"></div>
+          </div>
+          <input type="hidden" id="match-topic-interest" value="" />
+        </div>
 
         <div class="match-actions">
           <button id="btn-start-search">Start search</button>
@@ -277,6 +312,7 @@
   </div>
 
   <script src="/static/js/storage.js"></script>
+  <script src="/static/js/interests.js"></script>
   <script src="/static/js/ui.js"></script>
   <script src="/static/js/profile.js"></script>
   <script src="/static/js/matching.js"></script>

@@ -117,6 +117,9 @@ func (s *ChatServer) GetUserChats(
 ) (*chatpb.GetUserChatsResponse, error) {
 
 	chats, err := s.service.GetUserChats(ctx, req.Username)
+	if req.SortBy != "" || req.FilterMode != "" || req.FilterTag != "" || req.PeerQuery != "" {
+		chats, err = s.service.GetUserChatsFiltered(ctx, req.Username, req.SortBy, req.FilterMode, req.FilterTag, req.PeerQuery)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +133,8 @@ func (s *ChatServer) GetUserChats(
 			LastMessageAt: chat.LastMessageAt,
 			HasUnread:     chat.HasUnread,
 			MatchHint:     chat.MatchHint,
+			MatchTags:     chat.MatchTags,
+			SearchMode:    chat.SearchMode,
 		})
 	}
 
@@ -157,9 +162,51 @@ func (s *ChatServer) SetChatMatchTags(
 ) (*chatpb.SetChatMatchTagsResponse, error) {
 	chatID, _ := strconv.Atoi(req.ChatId)
 
-	if err := s.service.SetChatMatchTags(ctx, chatID, req.Tags); err != nil {
+	if req.SearchMode != "" {
+		if err := s.service.SetChatMatchMetadata(ctx, chatID, req.Tags, req.SearchMode); err != nil {
+			return nil, err
+		}
+	} else if err := s.service.SetChatMatchTags(ctx, chatID, req.Tags); err != nil {
 		return nil, err
 	}
 
 	return &chatpb.SetChatMatchTagsResponse{Ok: true}, nil
+}
+
+func (s *ChatServer) BlockUser(
+	ctx context.Context,
+	req *chatpb.BlockUserRequest,
+) (*chatpb.BlockUserResponse, error) {
+	if err := s.service.BlockUser(ctx, req.BlockerUsername, req.BlockedUsername); err != nil {
+		return nil, err
+	}
+
+	return &chatpb.BlockUserResponse{Ok: true}, nil
+}
+
+func (s *ChatServer) GetBlockStatus(
+	ctx context.Context,
+	req *chatpb.GetBlockStatusRequest,
+) (*chatpb.GetBlockStatusResponse, error) {
+	isBlocked, blockedByUser1, blockedByUser2, err := s.service.GetBlockStatus(ctx, req.User1, req.User2)
+	if err != nil {
+		return nil, err
+	}
+
+	return &chatpb.GetBlockStatusResponse{
+		IsBlocked:      isBlocked,
+		BlockedByUser1: blockedByUser1,
+		BlockedByUser2: blockedByUser2,
+	}, nil
+}
+
+func (s *ChatServer) UnblockUser(
+	ctx context.Context,
+	req *chatpb.UnblockUserRequest,
+) (*chatpb.UnblockUserResponse, error) {
+	if err := s.service.UnblockUser(ctx, req.BlockerUsername, req.BlockedUsername); err != nil {
+		return nil, err
+	}
+
+	return &chatpb.UnblockUserResponse{Ok: true}, nil
 }
