@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	chatpb "github.com/chimort/course_project2/api/proto/chatpb"
+	"github.com/chimort/course_project2/iternal/chat/models"
 )
 
 type ChatServer struct {
@@ -43,12 +44,17 @@ func (s *ChatServer) SendMessage(
 
 	chatID, _ := strconv.Atoi(req.ChatId)
 
-	err := s.service.SendMessage(
-		ctx,
-		chatID,
-		req.Sender,
-		req.Content,
-	)
+	err := s.service.SendMessage(ctx, models.Message{
+		ChatID:          chatID,
+		Sender:          req.Sender,
+		Content:         req.Content,
+		MessageType:     req.MessageType,
+		FileURL:         req.FileUrl,
+		FileName:        req.FileName,
+		MimeType:        req.MimeType,
+		FileSizeBytes:   req.FileSizeBytes,
+		DurationSeconds: req.DurationSeconds,
+	})
 
 	if err != nil {
 		return nil, err
@@ -100,9 +106,15 @@ func (s *ChatServer) GetMessages(
 	resp := make([]*chatpb.ChatMessage, 0, len(messages))
 	for _, m := range messages {
 		resp = append(resp, &chatpb.ChatMessage{
-			Sender:    m.Sender,
-			Content:   m.Content,
-			CreatedAt: m.CreatedAt,
+			Sender:          m.Sender,
+			Content:         m.Content,
+			CreatedAt:       m.CreatedAt,
+			MessageType:     m.MessageType,
+			FileUrl:         m.FileURL,
+			FileName:        m.FileName,
+			MimeType:        m.MimeType,
+			FileSizeBytes:   m.FileSizeBytes,
+			DurationSeconds: m.DurationSeconds,
 		})
 	}
 

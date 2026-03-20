@@ -65,6 +65,25 @@
   box-shadow: 0 10px 24px rgba(2, 132, 199, 0.24);
 }
 
+.profile-edit-btn {
+  margin-top: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 14px;
+  padding: 11px 16px;
+  background: linear-gradient(180deg, #ffffff, #f6f9ff);
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.profile-edit-btn:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, #ffffff, #eef6ff);
+  box-shadow: 0 14px 28px rgba(14, 116, 144, 0.12);
+}
+
 #edit-profile-form {
   border-top: 1px dashed rgba(15,23,42,0.08);
   margin-top: 18px;

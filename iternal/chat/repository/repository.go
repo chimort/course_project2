@@ -74,8 +74,8 @@ func (r *ChatRepository) CreateChat(ctx context.Context, user1, user2 string) (*
 	}, nil
 }
 
-func (r *ChatRepository) SendMessage(ctx context.Context, chatID int, sender, content string) error {
-	blocked, err := r.IsChatBlockedForUser(ctx, chatID, sender)
+func (r *ChatRepository) SendMessage(ctx context.Context, msg models.Message) error {
+	blocked, err := r.IsChatBlockedForUser(ctx, msg.ChatID, msg.Sender)
 	if err != nil {
 		return err
 	}
@@ -85,11 +85,19 @@ func (r *ChatRepository) SendMessage(ctx context.Context, chatID int, sender, co
 
 	_, err = r.db.ExecContext(
 		ctx,
-		`INSERT INTO messages (chat_id, sender_name, content)
-		 VALUES ($1,$2,$3)`,
-		chatID,
-		sender,
-		content,
+		`INSERT INTO messages (
+			chat_id, sender_name, content, message_type, file_url, file_name, mime_type, file_size_bytes, duration_seconds
+		)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+		msg.ChatID,
+		msg.Sender,
+		msg.Content,
+		msg.MessageType,
+		nullIfEmpty(msg.FileURL),
+		nullIfEmpty(msg.FileName),
+		nullIfEmpty(msg.MimeType),
+		zeroToNil(msg.FileSizeBytes),
+		zeroToNil32(msg.DurationSeconds),
 	)
 	if err != nil {
 		return err
@@ -100,9 +108,30 @@ func (r *ChatRepository) SendMessage(ctx context.Context, chatID int, sender, co
 		`UPDATE chat_histories
 		 SET last_message_at = now()
 		 WHERE chat_id = $1`,
-		chatID,
+		msg.ChatID,
 	)
 	return err
+}
+
+func nullIfEmpty(v string) interface{} {
+	if strings.TrimSpace(v) == "" {
+		return nil
+	}
+	return v
+}
+
+func zeroToNil(v int64) interface{} {
+	if v == 0 {
+		return nil
+	}
+	return v
+}
+
+func zeroToNil32(v int32) interface{} {
+	if v == 0 {
+		return nil
+	}
+	return v
 }
 
 func (r *ChatRepository) GetPeerUsername(ctx context.Context, chatID int, username string) (string, error) {
@@ -152,9 +181,15 @@ func (r *ChatRepository) GetMessages(ctx context.Context, chatID int, limit int)
 	rows, err := r.db.QueryContext(
 		ctx,
 		`SELECT sender_name, content,
+		        COALESCE(message_type, 'text') AS message_type,
+		        COALESCE(file_url, '') AS file_url,
+		        COALESCE(file_name, '') AS file_name,
+		        COALESCE(mime_type, '') AS mime_type,
+		        COALESCE(file_size_bytes, 0) AS file_size_bytes,
+		        COALESCE(duration_seconds, 0) AS duration_seconds,
 		        to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at
 		 FROM (
-			SELECT sender_name, content, created_at, id
+			SELECT sender_name, content, message_type, file_url, file_name, mime_type, file_size_bytes, duration_seconds, created_at, id
 			FROM messages
 			WHERE chat_id = $1
 			ORDER BY created_at DESC, id DESC
@@ -173,7 +208,7 @@ func (r *ChatRepository) GetMessages(ctx context.Context, chatID int, limit int)
 	for rows.Next() {
 		var m models.Message
 		var sender sql.NullString
-		if err := rows.Scan(&sender, &m.Content, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&sender, &m.Content, &m.MessageType, &m.FileURL, &m.FileName, &m.MimeType, &m.FileSizeBytes, &m.DurationSeconds, &m.CreatedAt); err != nil {
 			return nil, err
 		}
 		if sender.Valid && sender.String != "" {
@@ -209,7 +244,15 @@ func (r *ChatRepository) GetUserChatsFiltered(ctx context.Context, username, sor
 			SELECT
 				cp.chat_id,
 				peer.username AS peer_username,
-				COALESCE(last_msg.content, '') AS last_message,
+				COALESCE(
+					NULLIF(last_msg.content, ''),
+					CASE
+						WHEN last_msg.message_type = 'image' THEN '[Image]'
+						WHEN last_msg.message_type = 'voice' THEN '[Voice message]'
+						WHEN last_msg.message_type = 'file' THEN '[File]'
+						ELSE ''
+					END
+				) AS last_message,
 				COALESCE(last_msg.created_at, ch.created_at) AS sort_at,
 				COALESCE(
 					to_char(last_msg.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
@@ -246,7 +289,7 @@ func (r *ChatRepository) GetUserChatsFiltered(ctx context.Context, username, sor
 				ON peer.chat_id = cp.chat_id
 				AND peer.username <> $1
 			LEFT JOIN LATERAL (
-				SELECT m.content, m.created_at
+				SELECT m.content, m.created_at, COALESCE(m.message_type, 'text') AS message_type
 				FROM messages m
 				WHERE m.chat_id = cp.chat_id
 				ORDER BY m.created_at DESC, m.id DESC

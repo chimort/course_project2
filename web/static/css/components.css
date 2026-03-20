@@ -172,6 +172,23 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 16px;
+  background: #fff;
+  padding: 10px;
+}
+
+.interest-group-toggle {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
 }
 
 .interest-group-title {
@@ -180,6 +197,24 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #64748b;
+}
+
+.interest-group-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.interest-group-arrow {
+  font-size: 22px;
+  line-height: 1;
+  color: #94a3b8;
+  transform: rotate(0deg);
+  transition: transform 0.18s ease;
+}
+
+.interest-group-arrow.open {
+  transform: rotate(90deg);
 }
 
 .interest-grid {

@@ -64,6 +64,7 @@ func main() {
 	e.GET("/ws", wsHandler.HandleWS)
 
 	e.POST("iternal/ws/match-found", wsHandler.NotifyMatchFound)
+	e.POST("/v1/chat/upload", wsHandler.UploadAttachment)
 
 	e.Any("/v1/*", echo.WrapHandler(mux))
 

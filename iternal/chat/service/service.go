@@ -30,8 +30,8 @@ func (s *ChatService) CreateChat(ctx context.Context, user1, user2 string) (*mod
 	return chat, nil
 }
 
-func (s *ChatService) SendMessage(ctx context.Context, chatID int, sender, content string) error {
-	return s.repo.SendMessage(ctx, chatID, sender, content)
+func (s *ChatService) SendMessage(ctx context.Context, msg models.Message) error {
+	return s.repo.SendMessage(ctx, msg)
 }
 
 func (s *ChatService) GetParticipants(ctx context.Context, chatID int) ([]string, error) {

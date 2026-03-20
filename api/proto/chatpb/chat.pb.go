@@ -119,12 +119,18 @@ func (x *CreateChatResponse) GetChatId() string {
 }
 
 type SendMessageRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChatId        string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
-	Sender        string                 `protobuf:"bytes,2,opt,name=sender,proto3" json:"sender,omitempty"`
-	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	ChatId          string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
+	Sender          string                 `protobuf:"bytes,2,opt,name=sender,proto3" json:"sender,omitempty"`
+	Content         string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	MessageType     string                 `protobuf:"bytes,4,opt,name=message_type,json=messageType,proto3" json:"message_type,omitempty"`
+	FileUrl         string                 `protobuf:"bytes,5,opt,name=file_url,json=fileUrl,proto3" json:"file_url,omitempty"`
+	FileName        string                 `protobuf:"bytes,6,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	MimeType        string                 `protobuf:"bytes,7,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
+	FileSizeBytes   int64                  `protobuf:"varint,8,opt,name=file_size_bytes,json=fileSizeBytes,proto3" json:"file_size_bytes,omitempty"`
+	DurationSeconds int32                  `protobuf:"varint,9,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *SendMessageRequest) Reset() {
@@ -176,6 +182,48 @@ func (x *SendMessageRequest) GetContent() string {
 		return x.Content
 	}
 	return ""
+}
+
+func (x *SendMessageRequest) GetMessageType() string {
+	if x != nil {
+		return x.MessageType
+	}
+	return ""
+}
+
+func (x *SendMessageRequest) GetFileUrl() string {
+	if x != nil {
+		return x.FileUrl
+	}
+	return ""
+}
+
+func (x *SendMessageRequest) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *SendMessageRequest) GetMimeType() string {
+	if x != nil {
+		return x.MimeType
+	}
+	return ""
+}
+
+func (x *SendMessageRequest) GetFileSizeBytes() int64 {
+	if x != nil {
+		return x.FileSizeBytes
+	}
+	return 0
+}
+
+func (x *SendMessageRequest) GetDurationSeconds() int32 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
 }
 
 type SendMessageResponse struct {
@@ -363,12 +411,18 @@ func (x *GetMessagesRequest) GetLimit() int32 {
 }
 
 type ChatMessage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Sender        string                 `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Sender          string                 `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
+	Content         string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	CreatedAt       string                 `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	MessageType     string                 `protobuf:"bytes,4,opt,name=message_type,json=messageType,proto3" json:"message_type,omitempty"`
+	FileUrl         string                 `protobuf:"bytes,5,opt,name=file_url,json=fileUrl,proto3" json:"file_url,omitempty"`
+	FileName        string                 `protobuf:"bytes,6,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	MimeType        string                 `protobuf:"bytes,7,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
+	FileSizeBytes   int64                  `protobuf:"varint,8,opt,name=file_size_bytes,json=fileSizeBytes,proto3" json:"file_size_bytes,omitempty"`
+	DurationSeconds int32                  `protobuf:"varint,9,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ChatMessage) Reset() {
@@ -420,6 +474,48 @@ func (x *ChatMessage) GetCreatedAt() string {
 		return x.CreatedAt
 	}
 	return ""
+}
+
+func (x *ChatMessage) GetMessageType() string {
+	if x != nil {
+		return x.MessageType
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetFileUrl() string {
+	if x != nil {
+		return x.FileUrl
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetMimeType() string {
+	if x != nil {
+		return x.MimeType
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetFileSizeBytes() int64 {
+	if x != nil {
+		return x.FileSizeBytes
+	}
+	return 0
+}
+
+func (x *ChatMessage) GetDurationSeconds() int32 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
 }
 
 type GetMessagesResponse struct {
@@ -1199,11 +1295,17 @@ const file_chatpb_chat_proto_rawDesc = "" +
 	"\x05user1\x18\x01 \x01(\tR\x05user1\x12\x14\n" +
 	"\x05user2\x18\x02 \x01(\tR\x05user2\"-\n" +
 	"\x12CreateChatResponse\x12\x17\n" +
-	"\achat_id\x18\x01 \x01(\tR\x06chatId\"_\n" +
+	"\achat_id\x18\x01 \x01(\tR\x06chatId\"\xaa\x02\n" +
 	"\x12SendMessageRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x16\n" +
 	"\x06sender\x18\x02 \x01(\tR\x06sender\x12\x18\n" +
-	"\acontent\x18\x03 \x01(\tR\acontent\"%\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12!\n" +
+	"\fmessage_type\x18\x04 \x01(\tR\vmessageType\x12\x19\n" +
+	"\bfile_url\x18\x05 \x01(\tR\afileUrl\x12\x1b\n" +
+	"\tfile_name\x18\x06 \x01(\tR\bfileName\x12\x1b\n" +
+	"\tmime_type\x18\a \x01(\tR\bmimeType\x12&\n" +
+	"\x0ffile_size_bytes\x18\b \x01(\x03R\rfileSizeBytes\x12)\n" +
+	"\x10duration_seconds\x18\t \x01(\x05R\x0fdurationSeconds\"%\n" +
 	"\x13SendMessageResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"1\n" +
 	"\x16GetParticipantsRequest\x12\x17\n" +
@@ -1212,12 +1314,18 @@ const file_chatpb_chat_proto_rawDesc = "" +
 	"\tusernames\x18\x01 \x03(\tR\tusernames\"C\n" +
 	"\x12GetMessagesRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x14\n" +
-	"\x05limit\x18\x02 \x01(\x05R\x05limit\"^\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"\xa9\x02\n" +
 	"\vChatMessage\x12\x16\n" +
 	"\x06sender\x18\x01 \x01(\tR\x06sender\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x03 \x01(\tR\tcreatedAt\"F\n" +
+	"created_at\x18\x03 \x01(\tR\tcreatedAt\x12!\n" +
+	"\fmessage_type\x18\x04 \x01(\tR\vmessageType\x12\x19\n" +
+	"\bfile_url\x18\x05 \x01(\tR\afileUrl\x12\x1b\n" +
+	"\tfile_name\x18\x06 \x01(\tR\bfileName\x12\x1b\n" +
+	"\tmime_type\x18\a \x01(\tR\bmimeType\x12&\n" +
+	"\x0ffile_size_bytes\x18\b \x01(\x03R\rfileSizeBytes\x12)\n" +
+	"\x10duration_seconds\x18\t \x01(\x05R\x0fdurationSeconds\"F\n" +
 	"\x13GetMessagesResponse\x12/\n" +
 	"\bmessages\x18\x01 \x03(\v2\x13.chatpb.ChatMessageR\bmessages\"\xa9\x01\n" +
 	"\x13GetUserChatsRequest\x12\x1a\n" +

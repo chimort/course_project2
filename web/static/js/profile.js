@@ -374,16 +374,25 @@ function bindProfileEvents() {
 
   document.getElementById('btn-edit-profile').onclick = () => {
     const form = document.getElementById('edit-profile-form');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    const historyBlock = document.getElementById('chat-history-block');
+    const opening = form.style.display === 'none';
+    form.style.display = opening ? 'block' : 'none';
+    if (opening) {
+      historyBlock.style.display = 'none';
+    }
   };
 
   document.getElementById('do-update-profile').onclick = handleUpdateProfile;
 
   document.getElementById('btn-chat-history').onclick = async () => {
     const block = document.getElementById('chat-history-block');
+    const form = document.getElementById('edit-profile-form');
     const isHidden = block.style.display === 'none';
 
     block.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+      form.style.display = 'none';
+    }
 
     if (isHidden) {
       await loadChatHistory();

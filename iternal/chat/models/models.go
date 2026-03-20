@@ -7,11 +7,17 @@ type Chat struct {
 }
 
 type Message struct {
-	ID        int64
-	ChatID    int
-	Sender    string
-	Content   string
-	CreatedAt string
+	ID              int64
+	ChatID          int
+	Sender          string
+	Content         string
+	CreatedAt       string
+	MessageType     string
+	FileURL         string
+	FileName        string
+	MimeType        string
+	FileSizeBytes   int64
+	DurationSeconds int32
 }
 
 type ChatPreview struct {

@@ -46,6 +46,14 @@ function renderInterestPicker(options) {
   const selectedEl = picker.querySelector('[data-role="selected"]');
   const groupsEl = picker.querySelector('[data-role="groups"]');
   const categories = Array.from(new Set(INTEREST_CATALOG.map(item => item.category)));
+  const openCategories = new Set();
+
+  for (const category of categories) {
+    const hasSelectedInside = INTEREST_CATALOG.some(item => item.category === category && selected.has(item.value));
+    if (hasSelectedInside) {
+      openCategories.add(category);
+    }
+  }
 
   function renderSelected() {
     selectedEl.innerHTML = '';
@@ -82,13 +90,30 @@ function renderInterestPicker(options) {
       const section = document.createElement('section');
       section.className = 'interest-group';
 
-      const title = document.createElement('div');
+      const titleBtn = document.createElement('button');
+      titleBtn.type = 'button';
+      titleBtn.className = 'interest-group-toggle';
+
+      const title = document.createElement('span');
       title.className = 'interest-group-title';
       title.textContent = category;
-      section.appendChild(title);
+
+      const arrow = document.createElement('span');
+      arrow.className = 'interest-group-arrow' + (openCategories.has(category) || q ? ' open' : '');
+      arrow.textContent = '›';
+
+      const count = document.createElement('span');
+      count.className = 'interest-group-count';
+      count.textContent = `${items.length}`;
+
+      titleBtn.appendChild(title);
+      titleBtn.appendChild(count);
+      titleBtn.appendChild(arrow);
+      section.appendChild(titleBtn);
 
       const grid = document.createElement('div');
       grid.className = 'interest-grid';
+      grid.style.display = openCategories.has(category) || q ? 'grid' : 'none';
 
       for (const item of items) {
         const label = document.createElement('label');
@@ -122,6 +147,16 @@ function renderInterestPicker(options) {
         label.appendChild(meta);
         grid.appendChild(label);
       }
+
+      titleBtn.addEventListener('click', () => {
+        const isOpen = openCategories.has(category);
+        if (isOpen) {
+          openCategories.delete(category);
+        } else {
+          openCategories.add(category);
+        }
+        renderGroups(searchEl.value);
+      });
 
       section.appendChild(grid);
       groupsEl.appendChild(section);
