@@ -18,6 +18,12 @@
   background: linear-gradient(180deg, #fff, #fbfdff);
 }
 
+.chat-header-actions{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
 .chat-peer{
   display:flex;
   align-items:center;

@@ -41,6 +41,7 @@ async function performLogin(username, password, statusBoxId = 'login-result') {
   saveUsername(username);
 
   if (window.AppWS) window.AppWS.connect(username);
+  if (window.AppNotifications) window.AppNotifications.requestPermissionIfNeeded();
 
   clearMessage(statusBoxId);
   setAuthorizedUI(true);

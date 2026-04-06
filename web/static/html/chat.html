@@ -28,7 +28,10 @@
               <div class="chat-match-hint" id="chat-match-hint"></div>
             </div>
           </div>
-          <button id="chat-block-user" class="secondary-btn" type="button">Block user</button>
+          <div class="chat-header-actions">
+            <button id="chat-mute-user" class="ghost-btn" type="button">Mute notifications</button>
+            <button id="chat-block-user" class="secondary-btn" type="button">Block user</button>
+          </div>
         </div>
 
         <div class="chat-body" id="chat-messages"></div>
@@ -55,8 +58,9 @@
     </div>
   </div>
 
-  <script src="/static/js/storage.js"></script>
-  <script src="/static/js/ws.js"></script>
-  <script src="/static/js/chat_page.js"></script>
+  <script src="/static/js/storage.js?v=20260325"></script>
+  <script src="/static/js/notifications.js?v=20260325"></script>
+  <script src="/static/js/ws.js?v=20260325"></script>
+  <script src="/static/js/chat_page.js?v=20260325"></script>
 </body>
 </html>

@@ -10,6 +10,7 @@
   let isBlocked = false;
   let blockedByMe = false;
   let blockedMe = false;
+  let isMuted = false;
   let mediaRecorder = null;
   let recordingChunks = [];
   let recordingStartedAt = 0;
@@ -53,13 +54,25 @@
     }
   }
 
+  function syncMuteButton() {
+    const muteBtn = document.getElementById('chat-mute-user');
+    if (!muteBtn) return;
+    if (fastChat || !peer) {
+      muteBtn.style.display = 'none';
+      return;
+    }
+    muteBtn.style.display = '';
+    muteBtn.textContent = isMuted ? 'Unmute notifications' : 'Mute notifications';
+  }
+
   function applyBlockedState() {
     const input = document.getElementById('chat-text');
     const sendBtn = document.getElementById('chat-send');
     const blockBtn = document.getElementById('chat-block-user');
     const attachBtn = document.getElementById('chat-attach');
     const voiceBtn = document.getElementById('chat-voice');
-    if (!input || !sendBtn || !blockBtn || !attachBtn || !voiceBtn) return;
+    const muteBtn = document.getElementById('chat-mute-user');
+    if (!input || !sendBtn || !blockBtn || !attachBtn || !voiceBtn || !muteBtn) return;
 
     const disabled = fastChat || isBlocked;
     input.disabled = disabled;
@@ -69,6 +82,7 @@
 
     if (fastChat) {
       blockBtn.style.display = 'none';
+      muteBtn.style.display = 'none';
     } else if (blockedByMe) {
       blockBtn.disabled = false;
       blockBtn.textContent = 'Unblock user';
@@ -80,12 +94,34 @@
       blockBtn.textContent = 'Block user';
     }
 
+    muteBtn.disabled = false;
+    syncMuteButton();
+
     if (disabled) {
       hideStarters();
       input.placeholder = isBlocked ? 'Messaging is disabled in this chat' : 'Message...';
     } else {
       input.placeholder = 'Message...';
     }
+  }
+
+  function loadMuteState() {
+    isMuted = !!(peer && typeof window.isUserMuted === 'function' && window.isUserMuted(peer));
+    syncMuteButton();
+  }
+
+  function toggleMuteCurrentUser() {
+    if (fastChat || !peer) return;
+    if (typeof window.muteUser !== 'function' || typeof window.unmuteUser !== 'function') return;
+
+    if (isMuted) {
+      window.unmuteUser(peer);
+      isMuted = false;
+    } else {
+      window.muteUser(peer);
+      isMuted = true;
+    }
+    syncMuteButton();
   }
 
   function escapeHtml(value) {
@@ -701,6 +737,7 @@
     } catch (_) {}
 
     setPeerUI();
+    loadMuteState();
     await loadBlockStatus();
     if (!fastChat) {
       await loadMessageHistory();
@@ -711,6 +748,7 @@
 
     document.getElementById('chat-send').onclick = sendMessage;
     document.getElementById('chat-block-user').onclick = blockCurrentUser;
+    document.getElementById('chat-mute-user').onclick = toggleMuteCurrentUser;
     document.getElementById('chat-attach').onclick = () => document.getElementById('chat-file-input').click();
     document.getElementById('chat-file-input').addEventListener('change', handleFilePicked);
     document.getElementById('chat-voice').onclick = toggleVoiceRecording;

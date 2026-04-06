@@ -48,16 +48,16 @@
           return;
         }
 
-        // dispatch to chat handler if exists
         if (window.AppChat && typeof window.AppChat.handleWsEvent === 'function') {
           window.AppChat.handleWsEvent(msg);
-          return;
         }
 
-        // fallback: dispatch to matching handler if exists
         if (window.AppMatching && typeof window.AppMatching.handleWsEvent === 'function') {
           window.AppMatching.handleWsEvent(msg);
-          return;
+        }
+
+        if (window.AppNotifications && typeof window.AppNotifications.handleWsEvent === 'function') {
+          window.AppNotifications.handleWsEvent(msg);
         }
 
         console.log('[WS] message:', msg);
